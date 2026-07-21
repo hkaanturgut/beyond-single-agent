@@ -1,0 +1,93 @@
+name: beyond-single-agent
+version: 1
+description: Shared orchestration template used across both conference talks.
+framework: azure-ai-projects
+
+runtime:
+  project_endpoint: ${FOUNDRY_PROJECT_ENDPOINT}
+  model: ${FOUNDRY_MODEL_NAME}
+  credential: DefaultAzureCredential
+  local_fallback: true
+
+audiences:
+  malta:
+    focus:
+      - foundry visual orchestrator
+      - workflow YAML
+      - MCP tools
+      - deployment gates
+  python-toronto:
+    focus:
+      - small Python modules
+      - orchestrator flow
+      - readable SDK usage
+      - why specialization matters
+
+tools:
+  mcp-search:
+    kind: mcp
+    entrypoint: tools.mcp_tools:MCPToolRegistry.search
+    purpose: Search product notes, deployment guidance, and talking points
+  mcp-lookup:
+    kind: mcp
+    entrypoint: tools.mcp_tools:MCPToolRegistry.lookup
+    purpose: Fetch a specific fact when the orchestrator already knows the topic
+
+agents:
+  orchestrator:
+    module: agents.orchestrator:FoundryOrchestrator
+    responsibilities:
+      - classify the request
+      - route work to specialists
+      - keep the audience in scope
+      - optionally invoke a live Foundry response
+  research:
+    module: agents.domain_agents.research_agent:ResearchAgent
+    responsibilities:
+      - gather evidence
+      - surface risks
+      - isolate tool usage
+  summarizer:
+    module: agents.domain_agents.summarizer_agent:SummarizerAgent
+    responsibilities:
+      - adapt tone to the room
+      - turn findings into a narrative
+      - keep the close concise
+
+workflow:
+  - id: classify-request
+    agent: orchestrator
+    action: identify the audience, scope, and required specialist handoffs
+    output: work plan
+  - id: parallel-research
+    agent: research
+    tool: mcp-search
+    action: collect evidence for each topic instead of sending every concern to one giant prompt
+    output: findings packet
+  - id: synthesis
+    agent: summarizer
+    action: convert research into an audience-specific talk track
+    output: polished narrative
+  - id: optional-live-run
+    agent: orchestrator
+    condition: ENABLE_LIVE_FOUNDRY == 1
+    action: call AIProjectClient.get_openai_client().responses.create for a live response
+    output: final polish
+  - id: production-gates
+    agent: orchestrator
+    action: check tracing, retries, approvals, and rollback before promotion
+    output: deployment-ready checklist
+
+deployment:
+  environments:
+    - name: dev
+      approval_required: false
+    - name: stage
+      approval_required: true
+    - name: prod
+      approval_required: true
+  observability:
+    tracing: azure-monitor
+    evaluation_dataset: sample-regression-set
+    rollback_strategy: canary
+
