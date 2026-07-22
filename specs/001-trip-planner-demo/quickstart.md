@@ -11,6 +11,16 @@ This guide is the step-by-step runbook for running the demo.
 
 ## 2) Provision the Azure side (optional — only for Foundry backend)
 
+### Option A: GitHub Actions (recommended)
+
+1. Create a Microsoft Entra application or user-assigned managed identity with a federated credential for this repository.
+2. Grant it `Contributor` on the target resource group.
+3. Add GitHub secrets for `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, and `AZURE_SUBSCRIPTION_ID`.
+4. Run the `Deploy Azure infrastructure` workflow from the **Actions** tab.
+5. Copy the `foundryProjectEndpoint` output into `.env`.
+
+### Option B: Local Bicep deploy
+
 Deploy with Bicep:
 
 ```bash

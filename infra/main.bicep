@@ -2,8 +2,10 @@
 // ---------------------------------------------------------------------------
 // Main deployment entry point for the Beyond a Single Agent — Trip Planner demo.
 // Deploys:
-//   - Azure AI Foundry resource (hub)
+//   - Azure AI Foundry hub
 //   - Foundry project
+//   - Azure AI Services account + model deployment
+//   - Hub-to-model connection
 //   - Storage Account (required by Foundry)
 //   - Application Insights (optional observability)
 // ---------------------------------------------------------------------------
@@ -22,8 +24,11 @@ param foundryHubName string = 'foundry-trip-planner-${environmentName}'
 @description('Name of the Foundry Project resource.')
 param foundryProjectName string = 'trip-planner-${environmentName}'
 
+@description('Name of the Azure AI Services account that hosts the deployed model.')
+param aiServicesAccountName string = 'aitrip${uniqueString(resourceGroup().id, environmentName)}'
+
 @description('Model deployment name inside the Foundry project.')
-param modelDeploymentName string = 'gpt-4o-mini'
+param modelDeploymentName string = 'gpt-4.1-mini'
 
 @description('Tags applied to all resources.')
 param tags object = {
@@ -83,6 +88,7 @@ module foundry 'modules/foundry.bicep' = {
   params: {
     hubName: foundryHubName
     projectName: foundryProjectName
+    aiServicesAccountName: aiServicesAccountName
     modelDeploymentName: modelDeploymentName
     location: location
     tags: tags
@@ -95,5 +101,6 @@ module foundry 'modules/foundry.bicep' = {
 // Outputs — used by azd (azure.yaml) and the quickstart guide
 // ---------------------------------------------------------------------------
 output foundryProjectEndpoint string = foundry.outputs.projectEndpoint
+output foundryModelsEndpoint string = foundry.outputs.modelsEndpoint
 output storageAccountName string = storageAccount.name
 output appInsightsConnectionString string = appInsights.properties.ConnectionString

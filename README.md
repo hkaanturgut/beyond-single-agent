@@ -44,6 +44,26 @@ TRIP_BACKEND=github_models GITHUB_TOKEN=<token> \
 | `github_models` | GitHub Models OpenAI-compatible API | `GITHUB_TOKEN` |
 | `foundry` | Azure AI Foundry via `AIProjectClient` | `FOUNDRY_PROJECT_ENDPOINT` + Azure auth |
 
+## Azure deployment via GitHub Actions
+
+The `Deploy Azure infrastructure` workflow provisions the Azure side of the demo:
+
+- Storage account
+- Log Analytics workspace
+- Application Insights
+- Foundry hub
+- Foundry project
+- Azure AI Services account
+- `gpt-4.1-mini` model deployment
+- Hub-to-model connection
+
+One-time setup:
+
+1. Create a Microsoft Entra application or user-assigned managed identity with a federated credential for this repository.
+2. Grant it `Contributor` on the target resource group.
+3. Add these GitHub secrets: `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`.
+4. Run the workflow from the **Actions** tab and copy the `foundryProjectEndpoint` output into `.env`.
+
 ## Repository map
 
 | Path | Purpose |
@@ -52,7 +72,7 @@ TRIP_BACKEND=github_models GITHUB_TOKEN=<token> \
 | `src/trip_planner/workflow/builder.py` | `WorkflowBuilder`, `ConcurrentBuilder`, routing |
 | `src/trip_planner/agents/` | Five specialist agents |
 | `src/trip_planner/backends/` | Backend adapters + factory |
-| `infra/` | Bicep templates for Foundry Hub + Project deployment |
+| `infra/` | Bicep templates for Foundry hub, project, AI Services model, and observability |
 | `tests/` | Unit, integration, and contract tests |
 | `output/` | Generated trip-brief markdown files (git-ignored) |
 | `workflows/trip-planner-pipeline.yaml` | Human-readable YAML workflow descriptor |
@@ -92,4 +112,3 @@ uvx --from git+https://github.com/github/spec-kit.git specify init --here --inte
   affected specialist outputs fall back to safe defaults.
 - **Output files are timestamped** — each run produces a new file; old files are not overwritten.
 - **Bicep infra** — see [`infra/README.md`](infra/README.md) for production deployment instructions.
-

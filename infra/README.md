@@ -12,6 +12,9 @@ talk deployment of the trip-planner demo.
 | Application Insights | `Microsoft.Insights/components` |
 | Foundry Hub | `Microsoft.MachineLearningServices/workspaces` (kind=Hub) |
 | Foundry Project | `Microsoft.MachineLearningServices/workspaces` (kind=Project) |
+| Azure AI Services account | `Microsoft.CognitiveServices/accounts` (kind=AIServices) |
+| Model deployment | `Microsoft.CognitiveServices/accounts/deployments` |
+| Hub connection to model endpoint | `Microsoft.MachineLearningServices/workspaces/connections` |
 
 ## Prerequisites
 
@@ -35,9 +38,34 @@ az deployment group create \
   --parameters infra/main.parameters.bicepparam
 ```
 
+## Deploy with GitHub Actions
+
+The repo includes `.github/workflows/deploy-foundry.yml`, which deploys the same Bicep stack with Azure Login OIDC.
+
+### Required GitHub secrets
+
+- `AZURE_CLIENT_ID`
+- `AZURE_TENANT_ID`
+- `AZURE_SUBSCRIPTION_ID`
+
+### Required Azure setup
+
+1. Create a Microsoft Entra application or user-assigned managed identity.
+2. Add a federated identity credential for this repository.
+3. Grant the identity `Contributor` on the target resource group.
+
+### Run it
+
+1. Open **Actions** in GitHub.
+2. Select **Deploy Azure infrastructure**.
+3. Click **Run workflow**.
+4. Keep the default inputs or override the resource group, region, and environment name.
+
 ## After deployment
 
 1. Copy the `foundryProjectEndpoint` output value.
+   The deployment also emits `foundryModelsEndpoint` if you want the raw model
+   inference endpoint.
 2. Set it in your `.env` file:
 
    ```
@@ -59,5 +87,6 @@ az deployment group create \
 - No API keys are stored in Bicep.  The Foundry backend uses
   `DefaultAzureCredential` (supports az login, managed identity, and service
   principal via env vars).
-- The optional Azure OpenAI connection block in `modules/foundry.bicep` is
-  commented out.  Uncomment and fill in your AOAI resource details to link it.
+- The workflow deploys a `gpt-4.1-mini` model by default; change
+  `infra/main.parameters.bicepparam` or override the workflow input if you want
+  a different deployment name.
