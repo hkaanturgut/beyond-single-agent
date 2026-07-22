@@ -1,5 +1,6 @@
+agent-framework
 azure-ai-projects>=2.3.0
 azure-identity>=1.18.0
 python-dotenv>=1.0.1
+pydantic>=2.8.0
 PyYAML>=6.0.2
-

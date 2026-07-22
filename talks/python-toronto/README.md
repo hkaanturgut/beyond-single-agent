@@ -1,46 +1,44 @@
-# Beyond a Single Agent: Building Multi-Agent Workflows in Python with Microsoft Agent Framework
+# Beyond a Single Agent: Trip Planner Workflow (Python Toronto Notes)
 
-## Talk angle
+## Focus for this talk
 
-This version of the demo is the **Python developer** story:
+Tell a **Python-first** story using one concrete scenario:
 
-- keep the classes small,
-- make responsibilities obvious,
-- show that multi-agent can be regular Python code,
-- connect the implementation back to Azure AI Foundry only after the audience understands the core pattern.
+> Plan my 3-day trip to `<destination>` in `<month>` with budget `$<amount>`
 
-## Timeboxed versions
+Core teaching points:
+
+- Concurrent decomposition (research/planning/budget in parallel)
+- Fan-in aggregation
+- Conditional branch (optimize vs finalize)
+- Clean backend swap (local-friendly vs Foundry)
+
+## Current repo phase
+
+This branch is intentionally pre-implementation. Use these files for walkthrough:
+
+1. [`specs/001-trip-planner-demo/spec.md`](../../specs/001-trip-planner-demo/spec.md)
+2. [`specs/001-trip-planner-demo/plan.md`](../../specs/001-trip-planner-demo/plan.md)
+3. [`specs/001-trip-planner-demo/tasks.md`](../../specs/001-trip-planner-demo/tasks.md)
+4. [`specs/001-trip-planner-demo/data-model.md`](../../specs/001-trip-planner-demo/data-model.md)
+
+## Timeboxed flow
 
 ### 5 minutes
 
-- Run `single_agent_fail/demo.py`
-- Run `multi_agent_win/demo.py --audience python-toronto`
-- Open `agents/orchestrator.py`
+- Show spec -> plan -> tasks progression
+- Emphasize why single-agent prompting hides control-flow decisions
 
 ### 10 minutes
 
-- Add `research_agent.py` and `summarizer_agent.py`
-- Show the tool interface in `tools/mcp_tools.py`
+- Zoom in on workflow stages in `plan.md`
+- Show contract schema in `contracts/trip-workflow-contract.md`
 
-### 20 minutes
+### 15 minutes
 
-- Add `workflows/pipeline.yaml`
-- Explain how the same Python code maps cleanly to a Foundry-hosted setup
-
-## Files to open
-
-- [`agents/orchestrator.py`](../../agents/orchestrator.py)
-- [`agents/domain_agents/research_agent.py`](../../agents/domain_agents/research_agent.py)
-- [`agents/domain_agents/summarizer_agent.py`](../../agents/domain_agents/summarizer_agent.py)
-- [`demos/multi_agent_win/demo.py`](../../demos/multi_agent_win/demo.py)
+- Walk task ordering and MVP slice (US1) from `tasks.md`
+- Explain how concurrent + conditional patterns map to `agent-framework` primitives
 
 ## Key message
 
-The important win is not "more agents." The win is **clear boundaries**:
-
-- one class decides who should do the work,
-- one class gathers evidence,
-- one class shapes the explanation.
-
-That is easier to test, explain, and evolve than a single mega-agent with too many jobs.
-
+The win is not "more agents"; the win is **explicit workflow boundaries** that make Python code easier to build, test, and reason about.
