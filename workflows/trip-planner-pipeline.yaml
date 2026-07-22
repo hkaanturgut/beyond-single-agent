@@ -1,0 +1,92 @@
+# Trip Planner Pipeline — Workflow Descriptor
+# ---------------------------------------------------------------------------
+# This YAML file describes the trip-planner multi-agent workflow for the Malta
+# Microsoft AI User Group talk.  It is an observable summary of what
+# workflow/runner.py builds programmatically.
+#
+# Use this file to:
+#  - Walk the audience through the pipeline stage by stage.
+#  - Show the fan-out / conditional routing patterns visually.
+# ---------------------------------------------------------------------------
+
+name: trip-planner-pipeline
+version: "1.0"
+description: >
+  Multi-agent workflow that turns a natural-language trip request into a polished
+  markdown brief using concurrent fan-out, fan-in aggregation, and conditional routing.
+
+stages:
+
+  - id: request-intake
+    type: sequential
+    description: Parse the user prompt and validate required fields.
+    input: user_prompt (string)
+    output: TripRequest
+
+  - id: fan-out
+    type: concurrent
+    description: Run all three specialist agents in parallel.
+    agents:
+      - id: researcher
+        description: Gathers attractions, weather, events, and cultural tips.
+        output: ResearchOutput
+
+      - id: planner
+        description: Drafts the 3-day day-by-day itinerary.
+        output: PlanOutput
+
+      - id: budget
+        description: Estimates flights, hotel, food, and activity costs.
+        output: BudgetOutput
+
+  - id: aggregate
+    type: sequential
+    description: Merge all specialist outputs into a single TripProposal.
+    output: TripProposal
+
+  - id: validate
+    type: sequential
+    description: >
+      Evaluate TripProposal against budget and conflict constraints.
+      Produces a ValidationResult with a routing decision.
+    output: ValidationResult
+    routing:
+      condition: "total_estimate > budget_usd OR conflict_flags is non-empty"
+      branches:
+        optimize: OptimizerAgent
+        finalize: FinalizerAgent
+
+  - id: optimize
+    type: sequential
+    condition: "route == optimize"
+    description: >
+      Revise the proposal to reduce cost and resolve conflicts.
+      Documents applied changes and remaining trade-offs.
+    output: OptimizedProposal
+    then: finalize
+
+  - id: finalize
+    type: sequential
+    description: Render the polished markdown trip brief.
+    output: FinalTripBrief
+
+  - id: write-output
+    type: sequential
+    description: >
+      Save the markdown file to output/trip-<destination>-<timestamp>.md
+    output: output_path (string)
+
+backends:
+  github_models:
+    description: Local-friendly dev mode using GitHub Models API.
+    env_var: TRIP_BACKEND=github_models
+    requires: GITHUB_TOKEN
+
+  foundry:
+    description: Production mode using Azure AI Foundry via AIProjectClient.
+    env_var: TRIP_BACKEND=foundry
+    requires: FOUNDRY_PROJECT_ENDPOINT + DefaultAzureCredential
+
+  demo:
+    description: Safe fallback — deterministic template responses, no external calls.
+    env_var: TRIP_BACKEND=demo  # or omit for auto-fallback

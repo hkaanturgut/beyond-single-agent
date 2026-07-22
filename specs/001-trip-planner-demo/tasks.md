@@ -18,11 +18,11 @@
 
 **Purpose**: Initialize project structure and baseline configuration
 
-- [ ] T001 Create package skeleton under `src/trip_planner/` with subpackages `agents/`, `backends/`, `models/`, `workflow/`, `output/`, and `tools/`
-- [ ] T002 Update `requirements.txt` with planned dependencies (`agent-framework`, `azure-ai-projects`, `azure-identity`, `python-dotenv`, `pydantic`, `PyYAML`)
-- [ ] T003 Update `.env.example` with backend toggle and Foundry/GitHub Models configuration keys
-- [ ] T004 [P] Update `.gitignore` to include runtime artifacts in `output/` and `.runtime/` while preserving committed directory placeholders
-- [ ] T005 [P] Create testing scaffold directories `tests/unit/`, `tests/integration/`, and `tests/contract/`
+- [X] T001 Create package skeleton under `src/trip_planner/` with subpackages `agents/`, `backends/`, `models/`, `workflow/`, `output/`, and `tools/`
+- [X] T002 Update `requirements.txt` with planned dependencies (`agent-framework`, `azure-ai-projects`, `azure-identity`, `python-dotenv`, `pydantic`, `PyYAML`)
+- [X] T003 Update `.env.example` with backend toggle and Foundry/GitHub Models configuration keys
+- [X] T004 [P] Update `.gitignore` to include runtime artifacts in `output/` and `.runtime/` while preserving committed directory placeholders
+- [X] T005 [P] Create testing scaffold directories `tests/unit/`, `tests/integration/`, and `tests/contract/`
 
 ---
 
@@ -32,15 +32,15 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T006 Implement typed request/proposal/validation models in `src/trip_planner/models/request.py`, `src/trip_planner/models/proposal.py`, and `src/trip_planner/models/validation.py`
-- [ ] T007 Implement configuration loader and backend selection in `src/trip_planner/config.py`
-- [ ] T008 Implement backend interface contract in `src/trip_planner/backends/base.py`
-- [ ] T009 [P] Implement GitHub Models backend adapter in `src/trip_planner/backends/github_models.py`
-- [ ] T010 [P] Implement Azure AI Foundry backend adapter in `src/trip_planner/backends/foundry.py`
-- [ ] T011 Implement backend factory in `src/trip_planner/backends/__init__.py`
-- [ ] T012 Implement safe markdown writer (filename normalization + timestamping) in `src/trip_planner/output/writer.py`
-- [ ] T013 [P] Implement shared workflow state object definitions in `src/trip_planner/workflow/state.py`
-- [ ] T014 Implement baseline logging/tracing utility in `src/trip_planner/workflow/telemetry.py`
+- [X] T006 Implement typed request/proposal/validation models in `src/trip_planner/models/request.py`, `src/trip_planner/models/proposal.py`, and `src/trip_planner/models/validation.py`
+- [X] T007 Implement configuration loader and backend selection in `src/trip_planner/config.py`
+- [X] T008 Implement backend interface contract in `src/trip_planner/backends/base.py`
+- [X] T009 [P] Implement GitHub Models backend adapter in `src/trip_planner/backends/github_models.py`
+- [X] T010 [P] Implement Azure AI Foundry backend adapter in `src/trip_planner/backends/foundry.py`
+- [X] T011 Implement backend factory in `src/trip_planner/backends/__init__.py`
+- [X] T012 Implement safe markdown writer (filename normalization + timestamping) in `src/trip_planner/output/writer.py`
+- [X] T013 [P] Implement shared workflow state object definitions in `src/trip_planner/workflow/state.py`
+- [X] T014 Implement baseline logging/tracing utility in `src/trip_planner/workflow/telemetry.py`
 
 **Checkpoint**: Foundation ready — user story implementation can now begin in parallel
 
@@ -54,20 +54,20 @@
 
 ### Tests for User Story 1
 
-- [ ] T015 [P] [US1] Add parser and request validation tests in `tests/unit/test_request_parser.py`
-- [ ] T016 [P] [US1] Add fan-out/fan-in workflow integration test in `tests/integration/test_fanout_fanin.py`
-- [ ] T017 [P] [US1] Add final markdown contract test in `tests/contract/test_trip_brief_sections.py`
+- [X] T015 [P] [US1] Add parser and request validation tests in `tests/unit/test_request_parser.py`
+- [X] T016 [P] [US1] Add fan-out/fan-in workflow integration test in `tests/integration/test_fanout_fanin.py`
+- [X] T017 [P] [US1] Add final markdown contract test in `tests/contract/test_trip_brief_sections.py`
 
 ### Implementation for User Story 1
 
-- [ ] T018 [P] [US1] Implement `ResearcherAgent` in `src/trip_planner/agents/researcher.py`
-- [ ] T019 [P] [US1] Implement `PlannerAgent` in `src/trip_planner/agents/planner.py`
-- [ ] T020 [P] [US1] Implement `BudgetAgent` in `src/trip_planner/agents/budget.py`
-- [ ] T021 [US1] Implement fan-in aggregator in `src/trip_planner/workflow/aggregator.py`
-- [ ] T022 [US1] Build concurrent workflow stages with `ConcurrentBuilder` in `src/trip_planner/workflow/builder.py`
-- [ ] T023 [US1] Implement `FinalizerAgent` markdown formatter in `src/trip_planner/agents/finalizer.py`
-- [ ] T024 [US1] Wire CLI entry point and prompt intake in `src/trip_planner/cli.py`
-- [ ] T025 [US1] Persist finalized brief through output writer integration in `src/trip_planner/workflow/runner.py`
+- [X] T018 [P] [US1] Implement `ResearcherAgent` in `src/trip_planner/agents/researcher.py`
+- [X] T019 [P] [US1] Implement `PlannerAgent` in `src/trip_planner/agents/planner.py`
+- [X] T020 [P] [US1] Implement `BudgetAgent` in `src/trip_planner/agents/budget.py`
+- [X] T021 [US1] Implement fan-in aggregator in `src/trip_planner/workflow/aggregator.py`
+- [X] T022 [US1] Build concurrent workflow stages with `ConcurrentBuilder` in `src/trip_planner/workflow/builder.py`
+- [X] T023 [US1] Implement `FinalizerAgent` markdown formatter in `src/trip_planner/agents/finalizer.py`
+- [X] T024 [US1] Wire CLI entry point and prompt intake in `src/trip_planner/cli.py`
+- [X] T025 [US1] Persist finalized brief through output writer integration in `src/trip_planner/workflow/runner.py`
 
 **Checkpoint**: User Story 1 is fully functional and demoable as MVP
 
@@ -81,17 +81,17 @@
 
 ### Tests for User Story 2
 
-- [ ] T026 [P] [US2] Add budget-threshold routing tests in `tests/unit/test_budget_routing.py`
-- [ ] T027 [P] [US2] Add conflict-detection routing tests in `tests/unit/test_conflict_routing.py`
-- [ ] T028 [P] [US2] Add optimizer path integration test in `tests/integration/test_optimizer_path.py`
+- [X] T026 [P] [US2] Add budget-threshold routing tests in `tests/unit/test_budget_routing.py`
+- [X] T027 [P] [US2] Add conflict-detection routing tests in `tests/unit/test_conflict_routing.py`
+- [X] T028 [P] [US2] Add optimizer path integration test in `tests/integration/test_optimizer_path.py`
 
 ### Implementation for User Story 2
 
-- [ ] T029 [US2] Implement route decision logic in `src/trip_planner/workflow/router.py`
-- [ ] T030 [US2] Implement `OptimizerAgent` in `src/trip_planner/agents/optimizer.py`
-- [ ] T031 [US2] Integrate conditional branching with `add_multi_selection_edge_group` in `src/trip_planner/workflow/builder.py`
-- [ ] T032 [US2] Add optimization notes/trade-off rendering in `src/trip_planner/agents/finalizer.py`
-- [ ] T033 [US2] Add fallback behavior for unresolved constraints in `src/trip_planner/workflow/runner.py`
+- [X] T029 [US2] Implement route decision logic in `src/trip_planner/workflow/router.py`
+- [X] T030 [US2] Implement `OptimizerAgent` in `src/trip_planner/agents/optimizer.py`
+- [X] T031 [US2] Integrate conditional branching with `add_multi_selection_edge_group` in `src/trip_planner/workflow/builder.py`
+- [X] T032 [US2] Add optimization notes/trade-off rendering in `src/trip_planner/agents/finalizer.py`
+- [X] T033 [US2] Add fallback behavior for unresolved constraints in `src/trip_planner/workflow/runner.py`
 
 **Checkpoint**: User Stories 1 and 2 both work independently and together
 
@@ -105,15 +105,15 @@
 
 ### Tests for User Story 3
 
-- [ ] T034 [P] [US3] Add backend adapter contract tests in `tests/contract/test_backend_adapter_contract.py`
-- [ ] T035 [P] [US3] Add dual-backend parity integration test in `tests/integration/test_backend_parity.py`
+- [X] T034 [P] [US3] Add backend adapter contract tests in `tests/contract/test_backend_adapter_contract.py`
+- [X] T035 [P] [US3] Add dual-backend parity integration test in `tests/integration/test_backend_parity.py`
 
 ### Implementation for User Story 3
 
-- [ ] T036 [US3] Add backend mode switch handling in `src/trip_planner/config.py` and `src/trip_planner/cli.py`
-- [ ] T037 [US3] Add Foundry-mode runtime wiring in `src/trip_planner/backends/foundry.py` and `src/trip_planner/workflow/runner.py`
-- [ ] T038 [US3] Add GitHub Models runtime wiring in `src/trip_planner/backends/github_models.py` and `src/trip_planner/workflow/runner.py`
-- [ ] T039 [US3] Add talk-oriented sample invocations in `demos/trip_planner/README.md`
+- [X] T036 [US3] Add backend mode switch handling in `src/trip_planner/config.py` and `src/trip_planner/cli.py`
+- [X] T037 [US3] Add Foundry-mode runtime wiring in `src/trip_planner/backends/foundry.py` and `src/trip_planner/workflow/runner.py`
+- [X] T038 [US3] Add GitHub Models runtime wiring in `src/trip_planner/backends/github_models.py` and `src/trip_planner/workflow/runner.py`
+- [X] T039 [US3] Add talk-oriented sample invocations in `demos/trip_planner/README.md`
 
 **Checkpoint**: All three user stories are independently functional
 
@@ -123,11 +123,11 @@
 
 **Purpose**: Finish observability, optional extensions, and final documentation polish
 
-- [ ] T040 [P] Add optional MCP bridge scaffold behind config flag in `src/trip_planner/tools/mcp_bridge.py`
-- [ ] T041 Add workflow YAML mapping for Malta deep dive in `workflows/trip-planner-pipeline.yaml`
-- [ ] T042 [P] Update talk guides in `talks/python-toronto/README.md` and `talks/malta/README.md`
-- [ ] T043 Add operational notes for observability and production rollout in `README.md`
-- [ ] T044 Run quickstart validation and capture expected outputs in `specs/001-trip-planner-demo/quickstart.md`
+- [X] T040 [P] Add optional MCP bridge scaffold behind config flag in `src/trip_planner/tools/mcp_bridge.py`
+- [X] T041 Add workflow YAML mapping for Malta deep dive in `workflows/trip-planner-pipeline.yaml`
+- [X] T042 [P] Update talk guides in `talks/python-toronto/README.md` and `talks/malta/README.md`
+- [X] T043 Add operational notes for observability and production rollout in `README.md`
+- [X] T044 Run quickstart validation and capture expected outputs in `specs/001-trip-planner-demo/quickstart.md`
 
 ---
 

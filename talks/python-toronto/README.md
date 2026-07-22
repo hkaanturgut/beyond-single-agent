@@ -13,31 +13,50 @@ Core teaching points:
 - Conditional branch (optimize vs finalize)
 - Clean backend swap (local-friendly vs Foundry)
 
-## Current repo phase
+## Demo — run it now
 
-This branch is intentionally pre-implementation. Use these files for walkthrough:
+```bash
+# No credentials needed — runs in demo mode
+python -m trip_planner "Plan my 3-day trip to Lisbon in May with budget \$2600"
 
-1. [`specs/001-trip-planner-demo/spec.md`](../../specs/001-trip-planner-demo/spec.md)
-2. [`specs/001-trip-planner-demo/plan.md`](../../specs/001-trip-planner-demo/plan.md)
-3. [`specs/001-trip-planner-demo/tasks.md`](../../specs/001-trip-planner-demo/tasks.md)
-4. [`specs/001-trip-planner-demo/data-model.md`](../../specs/001-trip-planner-demo/data-model.md)
+# With GitHub token — uses real GitHub Models API
+TRIP_BACKEND=github_models GITHUB_TOKEN=<token> \
+  python -m trip_planner "Plan my 3-day trip to Kyoto in October with budget \$1800"
+```
 
-## Timeboxed flow
+## Talk flow — code walkthrough
 
-### 5 minutes
+| Step | File | What to highlight |
+|---|---|---|
+| 1 | `src/trip_planner/models/request.py` | `parse_trip_request` — regex-based NL parser |
+| 2 | `src/trip_planner/workflow/builder.py` | `WorkflowBuilder`, `ConcurrentBuilder`, `add_multi_selection_edge_group` |
+| 3 | `src/trip_planner/agents/` | Five agents, each focused on one concern |
+| 4 | `src/trip_planner/workflow/aggregator.py` | Fan-in — all parts combined into `TripProposal` |
+| 5 | `src/trip_planner/workflow/router.py` | Routing decision — budget + conflict checks |
+| 6 | `src/trip_planner/agents/finalizer.py` | Markdown rendering |
+| 7 | `src/trip_planner/output/writer.py` | Safe file naming + timestamp |
 
-- Show spec -> plan -> tasks progression
-- Emphasize why single-agent prompting hides control-flow decisions
+## Two demo scenarios
 
-### 10 minutes
+### Scenario A — finalize route (budget-comfortable)
 
-- Zoom in on workflow stages in `plan.md`
-- Show contract schema in `contracts/trip-workflow-contract.md`
+```bash
+python -m trip_planner "Plan my 3-day trip to Lisbon in May with budget \$2600"
+```
 
-### 15 minutes
+### Scenario B — optimizer route (tight budget)
 
-- Walk task ordering and MVP slice (US1) from `tasks.md`
-- Explain how concurrent + conditional patterns map to `agent-framework` primitives
+```bash
+python -m trip_planner "Plan my 3-day trip to Lisbon in May with budget \$600"
+```
+
+Watch the log line: `route decision: optimize (over_budget=True ...)`
+
+## Tests
+
+```bash
+pytest tests/ -v
+```
 
 ## Key message
 

@@ -1,6 +1,28 @@
+# Secrets / local config
 .env
+
+# Python
 .venv/
 __pycache__/
-.pytest_cache/
 *.pyc
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+.eggs/
 
+# Test / lint caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+coverage.xml
+
+# Runtime artifacts (generated at demo time; keep .gitkeep placeholders)
+output/*.md
+.runtime/
+
+# macOS
+.DS_Store

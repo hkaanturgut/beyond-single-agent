@@ -1,0 +1,18 @@
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[project]
+name = "trip-planner"
+version = "0.1.0"
+requires-python = ">=3.9"
+description = "Multi-agent trip-planning demo using concurrent fan-out/fan-in and conditional routing"
+
+[project.scripts]
+trip-planner = "trip_planner.cli:main"
