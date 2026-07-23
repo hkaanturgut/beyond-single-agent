@@ -11,3 +11,7 @@ param location = 'eastus2'
 param foundryHubName = 'foundry-trip-planner-dev'
 param foundryProjectName = 'trip-planner-dev'
 param modelDeploymentName = 'gpt-4.1-mini'
+param modelPublisherFormat = 'OpenAI'
+param modelVersion = '2025-04-14'
+param modelSkuName = 'Standard'
+param modelCapacity = 1

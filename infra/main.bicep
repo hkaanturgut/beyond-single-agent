@@ -30,6 +30,18 @@ param aiServicesAccountName string = 'aitrip${uniqueString(resourceGroup().id, e
 @description('Model deployment name inside the Foundry project.')
 param modelDeploymentName string = 'gpt-4.1-mini'
 
+@description('Model provider format for deployment (OpenAI for Azure OpenAI models).')
+param modelPublisherFormat string = 'OpenAI'
+
+@description('Model version available in the selected region/subscription.')
+param modelVersion string = '2025-04-14'
+
+@description('Model deployment SKU name available in the selected region/subscription.')
+param modelSkuName string = 'Standard'
+
+@description('Model deployment capacity.')
+param modelCapacity int = 1
+
 @description('Tags applied to all resources.')
 param tags object = {
   project: 'beyond-single-agent'
@@ -90,6 +102,10 @@ module foundry 'modules/foundry.bicep' = {
     projectName: foundryProjectName
     aiServicesAccountName: aiServicesAccountName
     modelDeploymentName: modelDeploymentName
+    modelPublisherFormat: modelPublisherFormat
+    modelVersion: modelVersion
+    modelSkuName: modelSkuName
+    modelCapacity: modelCapacity
     location: location
     tags: tags
     storageAccountId: storageAccount.id

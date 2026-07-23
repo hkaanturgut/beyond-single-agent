@@ -20,6 +20,18 @@ param aiServicesAccountName string
 @description('Model deployment name (e.g. gpt-4.1-mini).')
 param modelDeploymentName string = 'gpt-4.1-mini'
 
+@description('Model provider format (for Azure OpenAI models, use OpenAI).')
+param modelPublisherFormat string = 'OpenAI'
+
+@description('Model version available in the target region/subscription.')
+param modelVersion string = '2025-04-14'
+
+@description('Model deployment SKU name available in the target region/subscription.')
+param modelSkuName string = 'Standard'
+
+@description('Model deployment capacity.')
+param modelCapacity int = 1
+
 @description('Azure region.')
 param location string
 
@@ -97,14 +109,14 @@ resource modelDeployment 'Microsoft.CognitiveServices/accounts/deployments@2024-
   parent: aiServicesAccount
   name: modelDeploymentName
   sku: {
-    name: 'GlobalStandard'
-    capacity: 1
+    name: modelSkuName
+    capacity: modelCapacity
   }
   properties: {
     model: {
-      format: 'Microsoft'
+      format: modelPublisherFormat
       name: modelDeploymentName
-      version: '2025-04-14'
+      version: modelVersion
     }
     raiPolicyName: 'Microsoft.DefaultV2'
   }
