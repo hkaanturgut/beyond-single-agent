@@ -87,6 +87,6 @@ The repo includes `.github/workflows/deploy-foundry.yml`, which deploys the same
 - No API keys are stored in Bicep.  The Foundry backend uses
   `DefaultAzureCredential` (supports az login, managed identity, and service
   principal via env vars).
-- The workflow deploys a `gpt-4.1-mini` model by default; change
+- The workflow deploys a `gpt-5-mini` model by default; change
   `infra/main.parameters.bicepparam` or override the workflow input if you want
   a different deployment name.

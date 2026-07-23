@@ -17,17 +17,17 @@ param projectName string
 @description('Name of the Azure AI Services account backing the model deployment.')
 param aiServicesAccountName string
 
-@description('Model deployment name (e.g. gpt-4.1-mini).')
-param modelDeploymentName string = 'gpt-4.1-mini'
+@description('Model deployment name (e.g. gpt-5-mini).')
+param modelDeploymentName string = 'gpt-5-mini'
 
 @description('Model provider format (for Azure OpenAI models, use OpenAI).')
 param modelPublisherFormat string = 'OpenAI'
 
 @description('Model version available in the target region/subscription.')
-param modelVersion string = '2025-04-14'
+param modelVersion string = '2025-08-07'
 
 @description('Model deployment SKU name available in the target region/subscription.')
-param modelSkuName string = 'Standard'
+param modelSkuName string = 'GlobalStandard'
 
 @description('Model deployment capacity.')
 param modelCapacity int = 1

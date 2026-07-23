@@ -68,7 +68,7 @@ class TripPlannerConfig:
             github_token=os.getenv("GITHUB_TOKEN"),
             github_model_name=os.getenv("GITHUB_MODEL_NAME", "gpt-4o-mini"),
             foundry_project_endpoint=os.getenv("FOUNDRY_PROJECT_ENDPOINT"),
-            foundry_model_name=os.getenv("FOUNDRY_MODEL_NAME", "gpt-4.1-mini"),
+            foundry_model_name=os.getenv("FOUNDRY_MODEL_NAME", "gpt-5-mini"),
             mcp_enabled=os.getenv("MCP_ENABLED", "false").lower() == "true",
             output_dir=os.getenv("TRIP_OUTPUT_DIR", "output"),
         )

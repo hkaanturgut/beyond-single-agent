@@ -18,7 +18,7 @@ on:
       model_deployment_name:
         description: Foundry model deployment name
         required: true
-        default: gpt-4.1-mini
+        default: gpt-5-mini
 
 permissions:
   contents: read

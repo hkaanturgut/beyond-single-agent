@@ -28,16 +28,16 @@ param foundryProjectName string = 'trip-planner-${environmentName}'
 param aiServicesAccountName string = 'aitrip${uniqueString(resourceGroup().id, environmentName)}'
 
 @description('Model deployment name inside the Foundry project.')
-param modelDeploymentName string = 'gpt-4.1-mini'
+param modelDeploymentName string = 'gpt-5-mini'
 
 @description('Model provider format for deployment (OpenAI for Azure OpenAI models).')
 param modelPublisherFormat string = 'OpenAI'
 
 @description('Model version available in the selected region/subscription.')
-param modelVersion string = '2025-04-14'
+param modelVersion string = '2025-08-07'
 
 @description('Model deployment SKU name available in the selected region/subscription.')
-param modelSkuName string = 'Standard'
+param modelSkuName string = 'GlobalStandard'
 
 @description('Model deployment capacity.')
 param modelCapacity int = 1

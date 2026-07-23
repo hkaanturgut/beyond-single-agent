@@ -6,7 +6,7 @@ Uses ``AIProjectClient`` from ``azure-ai-projects`` together with
 Required environment variables
 -------------------------------
 FOUNDRY_PROJECT_ENDPOINT  — e.g. https://<resource>.services.ai.azure.com/api/projects/<proj>
-FOUNDRY_MODEL_NAME        — model deployment name (default: gpt-4.1-mini)
+FOUNDRY_MODEL_NAME        — model deployment name (default: gpt-5-mini)
 """
 
 from __future__ import annotations
@@ -24,7 +24,7 @@ class FoundryBackend(BackendAdapter):
     fail in environments where ``azure-ai-projects`` is not installed.
     """
 
-    def __init__(self, project_endpoint: str, model_name: str = "gpt-4.1-mini") -> None:
+    def __init__(self, project_endpoint: str, model_name: str = "gpt-5-mini") -> None:
         self._project_endpoint = project_endpoint
         self._model_name = model_name
         self._chat_client: Optional[object] = None
@@ -83,5 +83,5 @@ class FoundryBackend(BackendAdapter):
     @classmethod
     def from_env(cls) -> "FoundryBackend":
         endpoint = os.getenv("FOUNDRY_PROJECT_ENDPOINT", "")
-        model = os.getenv("FOUNDRY_MODEL_NAME", "gpt-4.1-mini")
+        model = os.getenv("FOUNDRY_MODEL_NAME", "gpt-5-mini")
         return cls(project_endpoint=endpoint, model_name=model)

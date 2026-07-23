@@ -54,7 +54,7 @@ The `Deploy Azure infrastructure` workflow provisions the Azure side of the demo
 - Foundry hub
 - Foundry project
 - Azure AI Services account
-- `gpt-4.1-mini` model deployment
+- `gpt-5-mini` model deployment
 - Hub-to-model connection
 
 One-time setup:
