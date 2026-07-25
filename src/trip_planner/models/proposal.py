@@ -15,14 +15,25 @@ from trip_planner.models.request import TripRequest
 # ---------------------------------------------------------------------------
 
 
+class LinkedItem(BaseModel):
+    """A named item with an optional source/reference URL."""
+
+    name: str
+    url: Optional[str] = None
+
+
 class ResearchOutput(BaseModel):
     """Destination intelligence gathered by ResearcherAgent."""
 
     attractions: List[str] = []
     weather_summary: str = ""
+    weather_url: Optional[str] = None
     events: List[str] = []
     cultural_tips: List[str] = []
     sources: List[str] = []
+    # Rich, link-carrying variants (preferred by the renderer when present).
+    attraction_links: List[LinkedItem] = []
+    event_links: List[LinkedItem] = []
 
 
 class TimeSlot(BaseModel):

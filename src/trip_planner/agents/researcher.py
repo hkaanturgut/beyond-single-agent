@@ -7,7 +7,7 @@ import re
 from typing import List
 
 from trip_planner.backends.base import BackendAdapter
-from trip_planner.models.proposal import ResearchOutput
+from trip_planner.models.proposal import LinkedItem, ResearchOutput
 from trip_planner.workflow.state import WorkflowState
 from trip_planner.workflow.telemetry import get_logger, stage_span
 
@@ -18,10 +18,15 @@ AGENT_NAME = "researcher-agent"
 
 _SYSTEM = (
     "You are a travel research specialist. "
-    "Given a destination and travel month, provide a concise JSON object with keys: "
-    "attractions (list of 4-6 top sights), weather_summary (1-2 sentences), "
-    "events (list of notable events that month), cultural_tips (list of 3-4 tips). "
-    "Return ONLY valid JSON, no markdown fences."
+    "Use web search to ground every fact in CURRENT sources and ALWAYS include the "
+    "source URL you used. Given a destination and travel month, provide a concise JSON "
+    "object with keys: "
+    "attractions (list of 4-6 objects, each {name, url} where url is the official site "
+    "or an authoritative page), weather_summary (1-2 confident sentences), "
+    "weather_url (a link to a seasonal weather/forecast page for the destination), "
+    "events (list of objects, each {name, url}), cultural_tips (list of 3-4 tips), "
+    "sources (list of the URLs you relied on). "
+    "Write confidently and specifically. Return ONLY valid JSON, no markdown fences."
 )
 
 
@@ -29,7 +34,8 @@ def _make_prompt(destination: str, month: str) -> str:
     return (
         f"Research destination: {destination}\n"
         f"Travel month: {month}\n"
-        "Return a JSON object with keys: attractions, weather_summary, events, cultural_tips."
+        "Return a JSON object with keys: attractions (each {name, url}), "
+        "weather_summary, weather_url, events (each {name, url}), cultural_tips, sources."
     )
 
 
@@ -47,15 +53,42 @@ def _parse_response(raw: str) -> ResearchOutput:
         )
     try:
         data = json.loads(cleaned[start:end])
+        attraction_links = _linked_items(data.get("attractions"))
+        event_links = _linked_items(data.get("events"))
+        weather_url = data.get("weather_url") or data.get("weather_link")
         return ResearchOutput(
-            attractions=_to_list(data.get("attractions")),
+            attractions=[i.name for i in attraction_links],
             weather_summary=str(data.get("weather_summary", "")),
-            events=_to_list(data.get("events")),
+            weather_url=str(weather_url).strip() if weather_url else None,
+            events=[i.name for i in event_links],
             cultural_tips=_to_list(data.get("cultural_tips")),
+            sources=_to_list(data.get("sources")),
+            attraction_links=attraction_links,
+            event_links=event_links,
         )
     except (json.JSONDecodeError, TypeError) as exc:
         _log.warning("ResearcherAgent: JSON parse error (%s); using partial data", exc)
         return ResearchOutput(weather_summary=raw[:200])
+
+
+def _linked_items(value: object) -> List[LinkedItem]:
+    """Parse a list that may contain plain strings or ``{name, url}`` objects."""
+    items: List[LinkedItem] = []
+    values = value if isinstance(value, list) else ([value] if value else [])
+    for v in values:
+        if isinstance(v, dict):
+            name = str(v.get("name") or v.get("title") or "").strip()
+            url = v.get("url") or v.get("link") or v.get("source")
+            detail = str(
+                v.get("date_note") or v.get("date") or v.get("description") or ""
+            ).strip()
+            if name and detail:
+                name = f"{name} — {detail}"
+            if name:
+                items.append(LinkedItem(name=name, url=str(url).strip() if url else None))
+        elif isinstance(v, str) and v.strip():
+            items.append(LinkedItem(name=v.strip()))
+    return items
 
 
 def _to_list(value: object) -> List[str]:

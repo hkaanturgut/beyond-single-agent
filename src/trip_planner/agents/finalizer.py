@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from typing import List, Optional
+from urllib.parse import quote_plus
 
 from trip_planner.backends.base import BackendAdapter
 from trip_planner.models import FinalTripBrief
@@ -27,6 +28,21 @@ _SYSTEM = (
     "write a packing/preparation section of 4-6 bullet points appropriate "
     "for the destination and month.  Return plain text bullets only."
 )
+
+
+def _maps_link(query: str) -> str:
+    """Deterministic Google Maps search link for a place/query."""
+    return "https://www.google.com/maps/search/?api=1&query=" + quote_plus(query)
+
+
+def _weather_link(destination: str, month: str) -> str:
+    """Deterministic weather/forecast search link for the destination and month."""
+    return "https://www.google.com/search?q=" + quote_plus(f"{destination} weather {month}")
+
+
+def _linked(name: str, url: Optional[str]) -> str:
+    """Render ``[name](url)`` when a URL is present, else the plain name."""
+    return f"[{name}]({url})" if url else name
 
 
 def _make_tips_prompt(proposal: TripProposal) -> str:
@@ -60,12 +76,31 @@ def _render_markdown(
     ]
 
     # --- Research highlights ---
-    if proposal.research.weather_summary:
-        lines += ["**Weather**: " + proposal.research.weather_summary, ""]
-    if proposal.research.attractions:
-        lines += ["**Top attractions**: " + ", ".join(proposal.research.attractions), ""]
-    if proposal.research.events:
-        lines += ["**Events this month**: " + ", ".join(proposal.research.events), ""]
+    research = proposal.research
+    if research.weather_summary:
+        weather_url = research.weather_url or _weather_link(dest, month)
+        lines += [
+            f"**Weather**: {research.weather_summary} ([forecast]({weather_url}))",
+            "",
+        ]
+    if research.attraction_links or research.attractions:
+        if research.attraction_links:
+            rendered = [
+                _linked(i.name, i.url or _maps_link(f"{i.name} {dest}"))
+                for i in research.attraction_links
+            ]
+        else:
+            rendered = [
+                _linked(name, _maps_link(f"{name} {dest}"))
+                for name in research.attractions
+            ]
+        lines += ["**Top attractions**: " + ", ".join(rendered), ""]
+    if research.event_links or research.events:
+        if research.event_links:
+            rendered = [_linked(i.name, i.url) for i in research.event_links]
+        else:
+            rendered = list(research.events)
+        lines += ["**Events this month**: " + ", ".join(rendered), ""]
 
     # --- Itinerary ---
     lines += ["## Day-by-Day Itinerary", ""]
@@ -73,8 +108,10 @@ def _render_markdown(
         lines += [f"### Day {day.day_number}", ""]
         for slot in day.slots:
             hint = f" — *{slot.location_hint}*" if slot.location_hint else ""
+            place = slot.location_hint or slot.activity
+            map_url = _maps_link(f"{place} {dest}")
             lines.append(
-                f"- **{slot.start_time}–{slot.end_time}**: {slot.activity}{hint}"
+                f"- **{slot.start_time}–{slot.end_time}**: {slot.activity}{hint} · [🗺️ map]({map_url})"
             )
         lines.append("")
 
@@ -99,6 +136,16 @@ def _render_markdown(
         lines += ["## Cultural Tips", ""]
         for tip in proposal.research.cultural_tips:
             lines.append(f"- {tip}")
+        lines.append("")
+
+    # --- Sources ---
+    if proposal.research.sources:
+        lines += ["## Sources", ""]
+        for src in proposal.research.sources:
+            src = src.strip()
+            if not src:
+                continue
+            lines.append(f"- <{src}>" if src.startswith("http") else f"- {src}")
         lines.append("")
 
     # --- Packing / Prep ---

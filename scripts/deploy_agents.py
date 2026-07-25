@@ -66,17 +66,20 @@ AGENT_SPECS: list[dict] = [
         "name": "researcher-agent",
         "description": "Gathers destination intelligence: attractions, weather, events, cultural tips.",
         "tools": [WEB_SEARCH],  # + optional MCP (see _build_tools)
-        # Low reasoning effort keeps latency down and leaves output budget for the final
-        # message — gpt-5-mini otherwise spends the whole cap on reasoning during tool use.
-        "reasoning_effort": "low",
+        # Medium reasoning yields more confident, better-grounded research; the raised
+        # model capacity (see infra/main.parameters.bicepparam) absorbs the extra tokens.
+        "reasoning_effort": "medium",
         "instructions": (
             "You are a travel research specialist. "
-            "Use the web_search tool to ground your answer in CURRENT information for the "
-            "specific destination and travel month (real attractions, seasonal weather, and "
-            "events happening that month). Do not rely on memory alone. "
-            "Given a destination and travel month, provide a concise JSON object with keys: "
-            "attractions (list of 4-6 top sights), weather_summary (1-2 sentences), "
-            "events (list of notable events that month), cultural_tips (list of 3-4 tips). "
+            "Use the web_search tool to ground EVERY fact in CURRENT sources and capture the "
+            "source URL for each (real attractions, seasonal weather, and events that month). "
+            "Do not rely on memory alone, and write confidently and specifically. "
+            "Given a destination and travel month, return a JSON object with keys: "
+            "attractions (list of 4-6 objects, each {name, url} where url is the official site "
+            "or an authoritative page), weather_summary (1-2 confident sentences), "
+            "weather_url (a link to a seasonal weather/forecast page), "
+            "events (list of objects, each {name, url}), cultural_tips (list of 3-4 tips), "
+            "sources (list of the URLs you relied on). "
             "After any tool use, your FINAL message must be ONLY valid JSON, no markdown fences."
         ),
     },
@@ -100,19 +103,23 @@ AGENT_SPECS: list[dict] = [
     },
     {
         "name": "budget-agent",
-        "description": "Estimates trip costs with exact, tool-computed arithmetic.",
-        "tools": [CODE_INTERPRETER],
-        "reasoning_effort": "low",
+        "description": "Estimates trip costs with exact, tool-computed arithmetic grounded in real prices.",
+        "tools": [WEB_SEARCH, CODE_INTERPRETER],
+        "reasoning_effort": "medium",
         "instructions": (
             "You are a travel budget specialist. "
-            "Use the code_interpreter tool to compute the arithmetic exactly — sum the line "
-            "items with real calculation, never mental math, and confirm the total. "
+            "First use the web_search tool to look up REAL, current prices for the destination "
+            "and travel month (typical round-trip flight, 3-night hotel, daily food, key "
+            "activity fees). Then use the code_interpreter tool to compute the arithmetic "
+            "exactly — sum the line items with real calculation, never mental math, and confirm "
+            "the total. "
             "Given a destination, travel month, and budget limit, "
             "estimate costs as a JSON object with keys: "
             "flight_estimate (number), hotel_estimate (number, 3 nights), "
             "food_estimate (number, 3 days), activity_estimate (number), "
             "total_estimate (the tool-computed sum of the above), "
-            "confidence (low|medium|high based on data availability). "
+            "confidence (report 'high' when your figures are grounded in web-searched prices, "
+            "'medium' when partially grounded, 'low' only if you could not find data). "
             "All values are in USD. "
             "After any tool use, your FINAL message must be ONLY valid JSON, no markdown fences."
         ),
