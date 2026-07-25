@@ -1,4 +1,4 @@
-name: Deploy Azure infrastructure
+name: Deploy Azure infrastructure and agents
 
 on:
   workflow_dispatch:
@@ -6,19 +6,23 @@ on:
       resource_group_name:
         description: Azure resource group to deploy into
         required: true
-        default: rg-trip-planner-dev
+        default: rg-beyond-single-agent
       location:
-        description: Azure region for the deployment
+        description: Azure region for the deployment (use eastus for new Foundry UI support)
         required: true
-        default: eastus2
+        default: eastus
       environment_name:
         description: Short environment label used in resource names
         required: true
-        default: dev
+        default: prod
       model_deployment_name:
         description: Foundry model deployment name
         required: true
         default: gpt-5-mini
+      deploy_agents:
+        description: Deploy Python agents to Foundry Agent Service after infra
+        required: true
+        default: 'true'
 
 permissions:
   contents: read
@@ -54,11 +58,25 @@ jobs:
       - name: Ensure resource group exists
         run: az group create --name "$RESOURCE_GROUP_NAME" --location "$LOCATION"
 
+      - name: Get deployer service principal object ID
+        id: sp_info
+        run: |
+          SP_OBJECT_ID=$(az ad sp show --id "$AZURE_CLIENT_ID" --query id -o tsv 2>/dev/null || echo "")
+          echo "sp_object_id=$SP_OBJECT_ID" >> "$GITHUB_OUTPUT"
+
       - name: Deploy Azure resources
         run: |
           FOUNDRY_HUB_NAME="foundry-trip-planner-${ENVIRONMENT_NAME}"
           FOUNDRY_PROJECT_NAME="trip-planner-${ENVIRONMENT_NAME}"
           DEPLOYMENT_NAME="trip-planner-${GITHUB_RUN_ID}"
+          SP_OBJECT_ID="${{ steps.sp_info.outputs.sp_object_id }}"
+
+          # Build developerPrincipalIds — include SP so it can deploy agents
+          if [ -n "$SP_OBJECT_ID" ]; then
+            DEV_PRINCIPALS="[\"${SP_OBJECT_ID}\"]"
+          else
+            DEV_PRINCIPALS="[]"
+          fi
 
           az deployment group create \
             --name "$DEPLOYMENT_NAME" \
@@ -69,9 +87,11 @@ jobs:
             location="$LOCATION" \
             foundryHubName="$FOUNDRY_HUB_NAME" \
             foundryProjectName="$FOUNDRY_PROJECT_NAME" \
-            modelDeploymentName="$MODEL_DEPLOYMENT_NAME"
+            modelDeploymentName="$MODEL_DEPLOYMENT_NAME" \
+            developerPrincipalIds="$DEV_PRINCIPALS"
 
       - name: Capture deployment outputs
+        id: outputs
         run: |
           DEPLOYMENT_NAME="trip-planner-${GITHUB_RUN_ID}"
 
@@ -87,10 +107,39 @@ jobs:
             --query "properties.outputs.foundryModelsEndpoint.value" \
             -o tsv)
 
+          echo "foundry_project_endpoint=$FOUNDRY_PROJECT_ENDPOINT" >> "$GITHUB_OUTPUT"
+          echo "foundry_models_endpoint=$FOUNDRY_MODELS_ENDPOINT" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Python
+        if: ${{ inputs.deploy_agents == 'true' }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Python dependencies
+        if: ${{ inputs.deploy_agents == 'true' }}
+        run: pip install --upgrade pip && pip install azure-ai-projects azure-identity python-dotenv
+
+      - name: Deploy agents to Foundry Agent Service
+        if: ${{ inputs.deploy_agents == 'true' }}
+        env:
+          FOUNDRY_PROJECT_ENDPOINT: ${{ steps.outputs.outputs.foundry_project_endpoint }}
+          FOUNDRY_MODEL_NAME: ${{ env.MODEL_DEPLOYMENT_NAME }}
+        run: python scripts/deploy_agents.py
+
+      - name: Write job summary
+        run: |
+          FOUNDRY_PROJECT_ENDPOINT="${{ steps.outputs.outputs.foundry_project_endpoint }}"
+          FOUNDRY_MODELS_ENDPOINT="${{ steps.outputs.outputs.foundry_models_endpoint }}"
           {
             echo "### Azure deployment complete"
             echo ""
-            echo "- Resource group: \`$RESOURCE_GROUP_NAME\`"
-            echo "- Foundry project endpoint: \`$FOUNDRY_PROJECT_ENDPOINT\`"
-            echo "- Foundry models endpoint: \`$FOUNDRY_MODELS_ENDPOINT\`"
+            echo "| Setting | Value |"
+            echo "|---|---|"
+            echo "| Resource group | \`$RESOURCE_GROUP_NAME\` |"
+            echo "| Region | \`$LOCATION\` |"
+            echo "| Foundry project endpoint | \`$FOUNDRY_PROJECT_ENDPOINT\` |"
+            echo "| Foundry models endpoint | \`$FOUNDRY_MODELS_ENDPOINT\` |"
+            echo ""
+            echo "Copy \`FOUNDRY_PROJECT_ENDPOINT\` into your \`.env\` file and set \`TRIP_BACKEND=foundry\`."
           } >> "$GITHUB_STEP_SUMMARY"
