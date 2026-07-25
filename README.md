@@ -127,19 +127,24 @@ az deployment group create \
 
 ### Step 3: Grant yourself Foundry access
 
+> **Already handled by Bicep.** The deployment in Step 2 assigns the `Azure AI Developer` role to every principal passed in `developerPrincipalIds` — and the CLI command above passes your own OID automatically. If you deployed that way, **skip this step**.
+
+Only run this if you need to grant access to a principal that was _not_ included in `developerPrincipalIds`:
+
 ```bash
 # Get your object ID
 MY_OID=$(az ad signed-in-user show --query id -o tsv)
+
+# Resolve the AI Services *account* (filter by type, not kind — the child
+# project also reports kind=AIServices and would return a second value)
 AI_SERVICES_NAME=$(az resource list --resource-group rg-beyond-single-agent \
-  --query "[?kind=='AIServices'].name" -o tsv)
+  --query "[?type=='Microsoft.CognitiveServices/accounts'].name | [0]" -o tsv)
 
 az role assignment create \
   --role "Azure AI Developer" \
   --assignee "$MY_OID" \
   --scope "/subscriptions/fc4b39c5-adad-4de0-a91a-06dd08aa2e8f/resourceGroups/rg-beyond-single-agent/providers/Microsoft.CognitiveServices/accounts/$AI_SERVICES_NAME"
 ```
-
-> **Tip:** Pass your OID in `developerPrincipalIds` during deployment (Step 2) to skip this step.
 
 ### Step 4: Deploy the agents to Foundry
 
