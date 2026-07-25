@@ -66,9 +66,10 @@ AGENT_SPECS: list[dict] = [
         "name": "researcher-agent",
         "description": "Gathers destination intelligence: attractions, weather, events, cultural tips.",
         "tools": [WEB_SEARCH],  # + optional MCP (see _build_tools)
-        # Medium reasoning yields more confident, better-grounded research; the raised
-        # model capacity (see infra/main.parameters.bicepparam) absorbs the extra tokens.
-        "reasoning_effort": "medium",
+        # Low reasoning effort keeps latency down and leaves output budget for the final
+        # JSON message — gpt-5-mini otherwise spends the cap on reasoning during tool use
+        # and returns a truncated/non-JSON reply. Web search still returns source URLs.
+        "reasoning_effort": "low",
         "instructions": (
             "You are a travel research specialist. "
             "Use the web_search tool to ground EVERY fact in CURRENT sources and capture the "
@@ -103,23 +104,24 @@ AGENT_SPECS: list[dict] = [
     },
     {
         "name": "budget-agent",
-        "description": "Estimates trip costs with exact, tool-computed arithmetic grounded in real prices.",
-        "tools": [WEB_SEARCH, CODE_INTERPRETER],
-        "reasoning_effort": "medium",
+        "description": "Estimates trip costs with exact, tool-computed arithmetic.",
+        "tools": [CODE_INTERPRETER],
+        # Low reasoning + a single tool keeps the final message within the output cap so it
+        # is reliably pure JSON (adding web_search here truncated the reply and broke parsing).
+        "reasoning_effort": "low",
         "instructions": (
             "You are a travel budget specialist. "
-            "First use the web_search tool to look up REAL, current prices for the destination "
-            "and travel month (typical round-trip flight, 3-night hotel, daily food, key "
-            "activity fees). Then use the code_interpreter tool to compute the arithmetic "
-            "exactly — sum the line items with real calculation, never mental math, and confirm "
-            "the total. "
+            "Use the code_interpreter tool to compute the arithmetic exactly — sum the line "
+            "items with real calculation, never mental math, and confirm the total. "
+            "Base your per-item figures on realistic current prices for the destination and "
+            "travel month, and be specific and confident. "
             "Given a destination, travel month, and budget limit, "
             "estimate costs as a JSON object with keys: "
             "flight_estimate (number), hotel_estimate (number, 3 nights), "
             "food_estimate (number, 3 days), activity_estimate (number), "
             "total_estimate (the tool-computed sum of the above), "
-            "confidence (report 'high' when your figures are grounded in web-searched prices, "
-            "'medium' when partially grounded, 'low' only if you could not find data). "
+            "confidence (report 'high' when your figures reflect realistic current prices, "
+            "'medium' when approximate, 'low' only if you are unsure). "
             "All values are in USD. "
             "After any tool use, your FINAL message must be ONLY valid JSON, no markdown fences."
         ),
