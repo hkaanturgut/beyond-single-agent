@@ -60,6 +60,7 @@ class FoundryBackend(BackendAdapter):
         user_message: str,
         *,
         max_tokens: int = 1024,
+        agent_name: Optional[str] = None,
     ) -> str:
         chat = self._get_chat_client()
         try:

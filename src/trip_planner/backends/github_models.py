@@ -50,6 +50,7 @@ class GitHubModelsBackend(BackendAdapter):
         user_message: str,
         *,
         max_tokens: int = 1024,
+        agent_name: Optional[str] = None,
     ) -> str:
         client = self._get_client()
         response = await client.chat.completions.create(  # type: ignore[attr-defined]

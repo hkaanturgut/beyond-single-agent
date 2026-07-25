@@ -11,6 +11,7 @@ without any Azure or GitHub credentials.
 from __future__ import annotations
 
 import textwrap
+from typing import Optional
 
 from trip_planner.backends.base import BackendAdapter
 
@@ -28,6 +29,7 @@ class DemoBackend(BackendAdapter):
         user_message: str,
         *,
         max_tokens: int = 1024,
+        agent_name: Optional[str] = None,
     ) -> str:
         # Return a minimal but structurally valid stub so all agents produce
         # something parseable.  In a real run the LLM fills this in properly.

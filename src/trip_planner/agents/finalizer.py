@@ -18,6 +18,9 @@ from trip_planner.workflow.telemetry import get_logger, stage_span
 
 _log = get_logger("agents.finalizer")
 
+# Explicit hosted-agent name (matches scripts/deploy_agents.py registration).
+AGENT_NAME = "finalizer-agent"
+
 _SYSTEM = (
     "You are a travel writer. "
     "Given trip research, an itinerary, and a budget breakdown, "
@@ -152,6 +155,7 @@ class FinalizerAgent:
                     system_prompt=_SYSTEM,
                     user_message=_make_tips_prompt(effective_proposal),
                     max_tokens=400,
+                    agent_name=AGENT_NAME,
                 )
             except Exception as exc:
                 _log.warning("FinalizerAgent: packing tips call failed (%s); using defaults", exc)

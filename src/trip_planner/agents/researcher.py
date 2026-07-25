@@ -13,6 +13,9 @@ from trip_planner.workflow.telemetry import get_logger, stage_span
 
 _log = get_logger("agents.researcher")
 
+# Explicit hosted-agent name (matches scripts/deploy_agents.py registration).
+AGENT_NAME = "researcher-agent"
+
 _SYSTEM = (
     "You are a travel research specialist. "
     "Given a destination and travel month, provide a concise JSON object with keys: "
@@ -79,6 +82,7 @@ class ResearcherAgent:
                         state.request.destination, state.request.month
                     ),
                     max_tokens=800,
+                    agent_name=AGENT_NAME,
                 )
                 state.research_output = _parse_response(raw)
             except Exception as exc:

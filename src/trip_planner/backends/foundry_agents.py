@@ -27,8 +27,10 @@ from typing import Optional
 from trip_planner.backends.base import BackendAdapter
 
 # Map the agent's role (system_prompt prefix) to its Foundry agent name.
-# When generate() is called by a specialist agent class, the first word of
-# the system_prompt identifies which hosted agent to use.
+# This heuristic is now only a *fallback* — specialist agent classes pass an
+# explicit ``agent_name`` to ``generate()`` (see ``AGENT_NAME`` in each agent
+# module).  The map is retained so ad-hoc callers that don't specify an agent
+# name still reach a sensible hosted agent.
 _AGENT_NAME_MAP: dict[str, str] = {
     "researcher": "researcher-agent",
     "planner":    "planner-agent",
@@ -45,7 +47,11 @@ _THREAD_POOL = ThreadPoolExecutor(max_workers=8)
 
 
 def _pick_agent_name(system_prompt: str) -> Optional[str]:
-    """Return the Foundry agent name that best matches this system prompt."""
+    """Fallback: infer the Foundry agent name from the system prompt.
+
+    Only used when an explicit ``agent_name`` was not supplied to
+    :meth:`FoundryAgentsBackend.generate`.
+    """
     lower = system_prompt.lower()
     for keyword, agent_name in _AGENT_NAME_MAP.items():
         if keyword in lower:
@@ -146,23 +152,30 @@ class FoundryAgentsBackend(BackendAdapter):
         user_message: str,
         *,
         max_tokens: int = 1024,
+        agent_name: Optional[str] = None,
     ) -> str:
-        """Invoke the appropriate hosted Foundry agent for this system prompt.
+        """Invoke a specific hosted Foundry agent via the Responses API.
 
-        The agent is selected by matching keywords in *system_prompt* to the
-        registered agent names.  The Responses API call is dispatched on a
-        thread pool so the async workflow can run multiple agents concurrently.
+        Routing is *explicit*: each specialist agent class passes its own
+        ``agent_name`` (e.g. ``"researcher-agent"``), so the request is
+        dispatched deterministically to the matching hosted PromptAgent.  When
+        no ``agent_name`` is supplied, the backend falls back to inferring one
+        from *system_prompt* via :func:`_pick_agent_name`.
+
+        The Responses API call runs on a thread pool so the async workflow can
+        fan out multiple specialist agents concurrently.
         """
-        agent_name = _pick_agent_name(system_prompt)
-        # Combine system_prompt into the user message so the hosted agent's
-        # own system instructions take precedence and the user content carries context.
-        full_input = f"{user_message}" if agent_name else f"{system_prompt}\n\n{user_message}"
+        resolved_name = agent_name or _pick_agent_name(system_prompt)
+        # When targeting a hosted agent, its own system instructions take
+        # precedence, so only the user content is sent.  Otherwise fold the
+        # system prompt into the input for the fallback model call.
+        full_input = user_message if resolved_name else f"{system_prompt}\n\n{user_message}"
 
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(
             _THREAD_POOL,
             self._call_agent_sync,
-            agent_name,
+            resolved_name,
             full_input,
             max_tokens,
         )

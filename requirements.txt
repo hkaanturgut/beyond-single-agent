@@ -11,6 +11,16 @@ openai>=1.45.0
 pytest>=8.0.0
 pytest-asyncio>=0.23.0
 
-# Note: 'agent-framework' (WorkflowBuilder / ConcurrentBuilder patterns) is
-# implemented locally in src/trip_planner/workflow/builder.py using asyncio
-# primitives.  Replace with the real package when it becomes available on PyPI.
+# Dev / Test
+pytest>=8.0.0
+pytest-asyncio>=0.23.0
+
+# Microsoft Agent Framework (the successor to Semantic Kernel + AutoGen).
+# Provides the real WorkflowBuilder / FoundryChatClient primitives this repo
+# mirrors.  Requires Python >= 3.10, so it is optional here: the demo ships a
+# dependency-free equivalent in src/trip_planner/workflow/builder.py that runs
+# on Python 3.9.  On Python 3.10+ you can install it to use the real package:
+#   pip install "agent-framework" "agent-framework-foundry"
+# See docs/architecture.md for the API mapping.
+# agent-framework>=1.12 ; python_version >= "3.10"
+# agent-framework-foundry>=1.10 ; python_version >= "3.10"

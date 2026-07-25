@@ -12,6 +12,9 @@ from trip_planner.workflow.telemetry import get_logger, stage_span
 
 _log = get_logger("agents.budget")
 
+# Explicit hosted-agent name (matches scripts/deploy_agents.py registration).
+AGENT_NAME = "budget-agent"
+
 _SYSTEM = (
     "You are a travel budget specialist. "
     "Given a destination, travel month, and budget limit, "
@@ -94,6 +97,7 @@ class BudgetAgent:
                     system_prompt=_SYSTEM,
                     user_message=_make_prompt(state),
                     max_tokens=600,
+                    agent_name=AGENT_NAME,
                 )
                 state.budget_output = _parse_response(raw, state.request.budget_usd)
             except Exception as exc:

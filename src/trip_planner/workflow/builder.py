@@ -1,14 +1,36 @@
 """Workflow builder primitives — WorkflowBuilder, ConcurrentBuilder, Workflow.
 
-This module provides a local implementation of the orchestration patterns
-described in the Microsoft Agent Framework docs:
-  - ``WorkflowBuilder``: sequential step chaining
-  - ``ConcurrentBuilder``: fan-out with asyncio.gather
-  - ``add_multi_selection_edge_group``: conditional routing by selector return value
+This module is a small, dependency-free implementation of the graph
+orchestration model described in the **Microsoft Agent Framework**
+(https://learn.microsoft.com/agent-framework/overview/?pivots=programming-language-python).
+It intentionally mirrors that framework's ``WorkflowBuilder`` API so the demo
+runs on Python 3.9 (the version pinned by CI and the deployed Foundry path)
+while staying faithful to the real primitives.
 
-When the ``agent-framework`` package becomes available on PyPI, the classes
-below can be replaced by that library's equivalents.  The calling code in
-``runner.py`` uses the same API surface so the swap should be minimal.
+Mapping to the real ``agent_framework`` package (Python >= 3.10)
+----------------------------------------------------------------
+    local (this module)                 agent_framework.WorkflowBuilder
+    -----------------------------------  -----------------------------------
+    add_concurrent().add_task(...)       add_fan_out_edges(source, targets)
+    (aggregate step)                     add_fan_in_edges(sources, target)
+    add_step(name, fn)                   add_edge(a, b) / add_chain([...])
+    add_multi_selection_edge_group(      add_multi_selection_edge_group(
+        name, selector, branches)            source, targets, selection_func)
+    build()                              build()
+    workflow.run(state)                  workflow.run(message)
+
+The real framework represents each node as an ``Executor`` (or a
+``SupportsAgentRun`` agent from ``FoundryChatClient.as_agent(...)``) and passes
+messages along typed edges.  Here each node is an ``async (state) -> state``
+coroutine and edges pass the shared :class:`WorkflowState`.  The graph shape —
+concurrent fan-out, fan-in aggregation, and a conditional multi-selection edge
+group — is identical.  See ``docs/architecture.md`` for the full diagram and a
+side-by-side comparison.
+
+To adopt the real package, install ``agent-framework`` (see requirements.txt),
+wrap each agent as a ``FoundryChatClient(...).as_agent(name=AGENT_NAME, ...)``,
+and swap the builder calls per the table above.  The calling code in
+``runner.py`` already uses this API surface, so the swap is mechanical.
 """
 
 from __future__ import annotations

@@ -13,6 +13,9 @@ from trip_planner.workflow.telemetry import get_logger, stage_span
 
 _log = get_logger("agents.planner")
 
+# Explicit hosted-agent name (matches scripts/deploy_agents.py registration).
+AGENT_NAME = "planner-agent"
+
 _SYSTEM = (
     "You are a trip-planning specialist. "
     "Given a destination, travel month, budget, and research notes, "
@@ -98,6 +101,7 @@ class PlannerAgent:
                     system_prompt=_SYSTEM,
                     user_message=_make_prompt(state),
                     max_tokens=1200,
+                    agent_name=AGENT_NAME,
                 )
                 state.plan_output = _parse_response(raw)
             except Exception as exc:

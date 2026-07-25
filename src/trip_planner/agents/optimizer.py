@@ -9,6 +9,9 @@ from trip_planner.workflow.telemetry import get_logger, stage_span
 
 _log = get_logger("agents.optimizer")
 
+# Explicit hosted-agent name (matches scripts/deploy_agents.py registration).
+AGENT_NAME = "optimizer-agent"
+
 _SYSTEM = (
     "You are a trip optimisation specialist. "
     "Given an over-budget or conflict-containing trip proposal, suggest concrete "
@@ -120,6 +123,7 @@ class OptimizerAgent:
                     system_prompt=_SYSTEM,
                     user_message=_make_prompt(state),
                     max_tokens=1024,
+                    agent_name=AGENT_NAME,
                 )
                 state.optimized = _parse_optimizer_response(raw, proposal)
             except Exception as exc:

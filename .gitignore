@@ -26,3 +26,4 @@ output/*.md
 
 # macOS
 .DS_Store
+.venv311/

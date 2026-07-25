@@ -8,38 +8,31 @@ A Python multi-agent workflow that plans a personalised 3-day trip using **Azure
 
 ## How it works
 
-```
-User prompt
-    │
-    ▼
-┌─────────────────────────────────────────────┐
-│  Fan-out (concurrent)                        │
-│  ┌───────────────┐  ┌───────────────┐  ┌──────────────┐ │
-│  │ ResearchAgent │  │  PlannerAgent │  │  BudgetAgent │ │
-│  └───────┬───────┘  └──────┬────────┘  └──────┬───────┘ │
-└──────────┼────────────────┼───────────────────┼─────────┘
-           └────────────────▼───────────────────┘
-                    Fan-in Aggregator
-                           │
-              ┌────────────▼────────────┐
-              │   Conditional Router    │
-              │ over budget / conflicts │
-              └────────┬────────────────┘
-             yes       │       no
-        ┌──────────────┘        └──────────────┐
-        ▼                                       ▼
- OptimizerAgent                          FinalizerAgent
-        └──────────────┐
-                       ▼
-                  FinalizerAgent
-                       │
-                       ▼
-          output/trip-valletta-<timestamp>.md
+```mermaid
+flowchart TD
+    START([User prompt]) --> FANOUT{{"Fan-out (concurrent)"}}
+    FANOUT --> R[ResearcherAgent]
+    FANOUT --> P[PlannerAgent]
+    FANOUT --> B[BudgetAgent]
+    R --> AGG{{Fan-in Aggregator}}
+    P --> AGG
+    B --> AGG
+    AGG --> ROUTE{{"Conditional Router<br/>over budget / conflicts?"}}
+    ROUTE -- yes --> OPT[OptimizerAgent]
+    ROUTE -- no --> FIN[FinalizerAgent]
+    OPT --> FIN
+    FIN --> OUT([output/trip-valletta-*.md])
+
+    classDef agent fill:#0b6bcb,stroke:#083d73,color:#fff;
+    class R,P,B,OPT,FIN agent;
 ```
 
-Each agent is a **hosted PromptAgent** registered in Foundry Agent Service (visible in the Foundry UI under **Agents → My agents**). The Python workflow layer (`WorkflowBuilder + ConcurrentBuilder`) orchestrates concurrent execution and conditional routing.
+Each agent is a **hosted PromptAgent** registered in Foundry Agent Service (visible in the Foundry UI under **Agents → My agents**). The Python workflow layer (`WorkflowBuilder`) orchestrates concurrent execution and conditional routing, and each specialist call is routed to its hosted agent by an **explicit `agent_name`**.
+
+📐 **See [`docs/architecture.md`](docs/architecture.md)** for the full orchestration diagrams (fan-out/fan-in, explicit agent routing sequence) and a side-by-side mapping to the real Microsoft Agent Framework API.
 
 ---
+
 
 ## Prerequisites
 

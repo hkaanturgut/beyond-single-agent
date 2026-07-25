@@ -21,6 +21,7 @@ class BackendAdapter(ABC):
         user_message: str,
         *,
         max_tokens: int = 1024,
+        agent_name: Optional[str] = None,
     ) -> str:
         """Send a prompt to the model and return the assistant text.
 
@@ -28,6 +29,11 @@ class BackendAdapter(ABC):
             system_prompt: Instruction text placed in the ``system`` role.
             user_message:  Content placed in the ``user`` role.
             max_tokens:    Upper bound on response length.
+            agent_name:    Explicit hosted-agent identifier (e.g.
+                ``"researcher-agent"``).  Backends that route to named
+                agents (Foundry Agent Service) use this to target a specific
+                specialist deterministically instead of inferring it from the
+                prompt.  Backends that talk to a single model ignore it.
 
         Returns:
             The assistant-role response as a plain string.
