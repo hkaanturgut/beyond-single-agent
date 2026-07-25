@@ -4,8 +4,8 @@ Usage::
 
     python -m trip_planner "Plan my 3-day trip to Kyoto in October with budget $1800"
 
-    # Explicit backend override
-    TRIP_BACKEND=github_models python -m trip_planner "Plan my 3-day trip to ..."
+    # Explicit backend override (both use the same Azure AI Foundry project)
+    TRIP_BACKEND=foundry_models python -m trip_planner "Plan my 3-day trip to ..."
 
     # Interactive prompt mode (no argument)
     python -m trip_planner
@@ -40,15 +40,13 @@ def main(argv: list = None) -> int:
     if argv is None:
         argv = sys.argv
 
-    cfg = TripPlannerConfig.from_env()
+    try:
+        cfg = TripPlannerConfig.from_env()
+    except ValueError as exc:
+        print(f"Configuration error: {exc}")
+        return 1
 
-    if cfg.is_demo_mode:
-        print(
-            "[trip-planner] Running in DEMO mode — no external backend calls.\n"
-            "  Set TRIP_BACKEND=github_models + GITHUB_TOKEN for live responses.\n"
-        )
-    else:
-        print(f"[trip-planner] Backend: {cfg.backend.value}")
+    print(f"[trip-planner] Backend: {cfg.backend.value} (Azure AI Foundry)")
 
     try:
         prompt = _get_prompt_text(argv)

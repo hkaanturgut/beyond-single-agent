@@ -9,7 +9,9 @@ from typing import List, Optional
 class BackendAdapter(ABC):
     """Minimal contract that every backend must satisfy.
 
-    Concrete implementations live in ``github_models.py`` and ``foundry.py``.
+    Concrete implementations live in ``foundry.py`` (direct model inference)
+    and ``foundry_agents.py`` (hosted multi-agent), both targeting Azure AI
+    Foundry.
     Each adapter wraps one chat-completion provider and exposes a single
     ``generate`` coroutine so that agents remain backend-agnostic.
     """
@@ -45,4 +47,4 @@ class BackendAdapter(ABC):
     @property
     @abstractmethod
     def name(self) -> str:
-        """Short human-readable identifier (e.g. ``"github_models"``)."""
+        """Short human-readable identifier (e.g. ``"foundry_agents"``)."""

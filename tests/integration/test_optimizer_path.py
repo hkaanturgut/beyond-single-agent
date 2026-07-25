@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from trip_planner.backends.demo import DemoBackend
+from fakes import FakeBackend
 from trip_planner.models.proposal import BudgetOutput, PlanOutput, ResearchOutput, TripProposal
 from trip_planner.models.request import TripRequest
 from trip_planner.models.validation import ROUTE_OPTIMIZE
@@ -15,7 +15,7 @@ from trip_planner.workflow.state import WorkflowState
 
 @pytest.fixture()
 def demo_backend():
-    return DemoBackend()
+    return FakeBackend()
 
 
 @pytest.mark.asyncio

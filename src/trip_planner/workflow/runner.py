@@ -87,7 +87,7 @@ async def run_trip_workflow(
 
     Args:
         request:    Validated trip request.
-        backend:    Instantiated backend adapter (demo, github_models, or foundry).
+        backend:    Instantiated backend adapter (foundry or foundry_models).
         output_dir: Directory to write the markdown output file into.
 
     Returns:

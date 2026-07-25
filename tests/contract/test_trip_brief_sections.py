@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from trip_planner.backends.demo import DemoBackend
+from fakes import FakeBackend
 from trip_planner.models.request import TripRequest
 from trip_planner.workflow.runner import run_trip_workflow
 
@@ -26,7 +26,7 @@ OVER_BUDGET_SECTIONS = [
 
 @pytest.fixture()
 def demo_backend():
-    return DemoBackend()
+    return FakeBackend()
 
 
 @pytest.mark.asyncio
@@ -63,7 +63,7 @@ class TestTripBriefSections:
         """When the optimizer route is taken the brief must have an Optimization Notes section."""
         req = TripRequest(destination="Lisbon", month="May", budget_usd=100)
         brief = await run_trip_workflow(req, demo_backend, output_dir=str(tmp_path))
-        # DemoBackend budget fallback proportional split for $100 ~= $95 total
+        # FakeBackend budget fallback proportional split for $100 ~= $95 total
         # which is under $100 — so this may or may not trigger optimizer.
         # Test that at minimum the required sections are still present regardless
         for section in REQUIRED_SECTIONS:

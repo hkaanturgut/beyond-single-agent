@@ -1,10 +1,10 @@
-"""Integration test — fan-out / fan-in using the DemoBackend."""
+"""Integration test — fan-out / fan-in using the FakeBackend."""
 
 from __future__ import annotations
 
 import pytest
 
-from trip_planner.backends.demo import DemoBackend
+from fakes import FakeBackend
 from trip_planner.models.request import TripRequest
 from trip_planner.workflow.aggregator import aggregate
 from trip_planner.workflow.runner import build_workflow, run_trip_workflow
@@ -13,7 +13,7 @@ from trip_planner.workflow.state import WorkflowState
 
 @pytest.fixture()
 def demo_backend():
-    return DemoBackend()
+    return FakeBackend()
 
 
 @pytest.fixture()

@@ -77,16 +77,16 @@ stages:
     output: output_path (string)
 
 backends:
-  github_models:
-    description: Local-friendly dev mode using GitHub Models API.
-    env_var: TRIP_BACKEND=github_models
-    requires: GITHUB_TOKEN
-
   foundry:
-    description: Production mode using Azure AI Foundry via AIProjectClient.
-    env_var: TRIP_BACKEND=foundry
-    requires: FOUNDRY_PROJECT_ENDPOINT + DefaultAzureCredential
+    description: >
+      Hosted multi-agent workflow — each specialist call is routed to its
+      PromptAgent in Azure AI Foundry Agent Service via the Responses API.
+    env_var: TRIP_BACKEND=foundry  # default
+    requires: FOUNDRY_PROJECT_ENDPOINT + Azure credential (az login / SP)
 
-  demo:
-    description: Safe fallback — deterministic template responses, no external calls.
-    env_var: TRIP_BACKEND=demo  # or omit for auto-fallback
+  foundry_models:
+    description: >
+      Direct chat completions against the same Azure AI Foundry model
+      deployment (no hosted agents required).
+    env_var: TRIP_BACKEND=foundry_models
+    requires: FOUNDRY_PROJECT_ENDPOINT + Azure credential (az login / SP)

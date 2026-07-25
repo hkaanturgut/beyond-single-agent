@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from trip_planner.backends.demo import DemoBackend
+from fakes import FakeBackend
 from trip_planner.models.request import TripRequest
 from trip_planner.workflow.runner import run_trip_workflow
 
@@ -24,9 +24,9 @@ def request_obj():
 @pytest.mark.asyncio
 class TestBackendParity:
     async def test_demo_backend_produces_required_sections(self, request_obj, tmp_path):
-        """DemoBackend must produce all required markdown sections."""
+        """FakeBackend must produce all required markdown sections."""
         brief = await run_trip_workflow(
-            request_obj, DemoBackend(), output_dir=str(tmp_path)
+            request_obj, FakeBackend(), output_dir=str(tmp_path)
         )
         for section in REQUIRED_SECTIONS:
             assert section in brief.markdown, f"Missing section: {section}"
@@ -34,12 +34,12 @@ class TestBackendParity:
     async def test_two_demo_backend_runs_produce_comparable_structure(
         self, request_obj, tmp_path
     ):
-        """Two runs with DemoBackend must both produce all required sections."""
+        """Two runs with FakeBackend must both produce all required sections."""
         brief_a = await run_trip_workflow(
-            request_obj, DemoBackend(), output_dir=str(tmp_path)
+            request_obj, FakeBackend(), output_dir=str(tmp_path)
         )
         brief_b = await run_trip_workflow(
-            request_obj, DemoBackend(), output_dir=str(tmp_path)
+            request_obj, FakeBackend(), output_dir=str(tmp_path)
         )
         for section in REQUIRED_SECTIONS:
             assert section in brief_a.markdown, f"Run A missing section: {section}"
@@ -50,11 +50,11 @@ class TestBackendParity:
         import asyncio
 
         brief_a, brief_b = await asyncio.gather(
-            run_trip_workflow(request_obj, DemoBackend(), output_dir=str(tmp_path)),
+            run_trip_workflow(request_obj, FakeBackend(), output_dir=str(tmp_path)),
             # Sleep briefly to ensure distinct timestamps
             run_trip_workflow(
                 TripRequest(destination="Kyoto", month="October", budget_usd=1800),
-                DemoBackend(),
+                FakeBackend(),
                 output_dir=str(tmp_path),
             ),
         )

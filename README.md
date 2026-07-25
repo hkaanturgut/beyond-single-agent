@@ -41,11 +41,18 @@ Each agent is a **hosted PromptAgent** registered in Foundry Agent Service (visi
 | Python | 3.11+ |
 | Azure CLI | latest (`az --version`) |
 | Azure subscription | Owner or Contributor access |
-| GitHub account | For GitHub Models free tier (optional) |
 
 ---
 
-## Quick start — local demo (no Azure)
+## Quick start — Azure AI Foundry
+
+This project runs **entirely on Azure AI Foundry** — there is no offline/demo
+mode. Both backends call the same Foundry project:
+
+| `TRIP_BACKEND` | What it does |
+|---|---|
+| `foundry` *(default)* | Hosted multi-agent workflow — each specialist call is routed to its PromptAgent in Foundry Agent Service (via the Responses API). |
+| `foundry_models` | Direct chat completions against the same Foundry model deployment (no hosted agents required). |
 
 ```bash
 # 1. Clone and create virtual environment
@@ -56,27 +63,23 @@ python3 -m venv .venv && source .venv/bin/activate
 # 2. Install dependencies
 pip install -r requirements.txt
 
-# 3. Run in demo mode (no credentials required)
+# 3. Point at your Foundry project and sign in
+cp .env.example .env         # set FOUNDRY_PROJECT_ENDPOINT
+az login --tenant ffe3d4fb-2c1a-4bee-be2f-4b6e78f182c9
+az account set --subscription fc4b39c5-adad-4de0-a91a-06dd08aa2e8f
+
+# 4. Run (hosted multi-agent workflow — deploy agents first, see below)
 python3 -m trip_planner "Plan my 3-day trip to Valletta in April with budget \$2200"
+
+# ...or use direct model inference on the same Foundry (no hosted agents):
+TRIP_BACKEND=foundry_models \
+  python3 -m trip_planner "Plan my 3-day trip to Valletta in April with budget \$2200"
 ```
 
 The output markdown is saved to `output/trip-valletta-<timestamp>.md`.
 
----
-
-## Quick start — GitHub Models (free tier with live LLM)
-
-```bash
-# 1. Get a free GitHub token with Models access
-#    https://github.com/settings/tokens  (classic, no scopes needed)
-
-# 2. Copy and fill in .env
-cp .env.example .env
-# Set: TRIP_BACKEND=github_models  and  GITHUB_TOKEN=<your token>
-
-# 3. Run
-python3 -m trip_planner "Plan my 3-day trip to Valletta in April with budget \$2200"
-```
+> First time? Follow **Full setup — Azure AI Foundry** below to provision the
+> infrastructure and register the hosted agents.
 
 ---
 
@@ -169,11 +172,9 @@ python3 -m trip_planner "Plan my 3-day trip to Valletta in April with budget \$2
 
 | Variable | Required for | Description |
 |---|---|---|
-| `TRIP_BACKEND` | always | `demo` \| `github_models` \| `foundry` |
-| `GITHUB_TOKEN` | github_models | GitHub PAT with Models access |
-| `GITHUB_MODEL_NAME` | github_models | default `gpt-4o-mini` |
-| `FOUNDRY_PROJECT_ENDPOINT` | foundry | `https://<resource>.services.ai.azure.com/api/projects/<project>` |
-| `FOUNDRY_MODEL_NAME` | foundry | model deployment name, default `gpt-5-mini` |
+| `TRIP_BACKEND` | always | `foundry` (default) \| `foundry_models` |
+| `FOUNDRY_PROJECT_ENDPOINT` | always | `https://<resource>.services.ai.azure.com/api/projects/<project>` |
+| `FOUNDRY_MODEL_NAME` | always | model deployment name, default `gpt-5-mini` |
 
 ---
 
@@ -221,10 +222,10 @@ pytest tests/ -v
 → You need the `Azure AI Developer` role on the AI Services account. Run Step 3 above.
 
 **"FOUNDRY_PROJECT_ENDPOINT is not set"**  
-→ Copy the endpoint from the GitHub Actions job summary or run `az deployment group show`.
+→ This project is Foundry-only and will exit with a clear error if the endpoint is missing. Copy the endpoint from the GitHub Actions job summary or run `az deployment group show`, then set `FOUNDRY_PROJECT_ENDPOINT` in `.env`.
 
-**Demo mode falls back automatically**  
-→ If `FOUNDRY_PROJECT_ENDPOINT` is missing, the app defaults to `demo` mode (no Azure required). Set the env var to use Foundry.
+**Hosted agents not found (`TRIP_BACKEND=foundry`)**  
+→ Register them once with `python scripts/deploy_agents.py`, or use `TRIP_BACKEND=foundry_models` to call the Foundry model directly without hosted agents.
 
 **Model deployment quota issues**  
 → `gpt-5-mini` with `GlobalStandard` SKU is used. If quota is exceeded, change `modelDeploymentName` in `infra/main.parameters.bicepparam` to a model available in your subscription.

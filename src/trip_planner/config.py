@@ -1,5 +1,14 @@
 """Configuration loader — reads environment variables and selects the backend.
 
+This project runs entirely on **Azure AI Foundry**.  There is no offline or
+demo mode: every run calls the same Foundry project.  Two Foundry backends are
+supported, both targeting the same project/model:
+
+    foundry         — hosted multi-agent workflow (5 PromptAgents in Foundry
+                      Agent Service, invoked via the Responses API).  [default]
+    foundry_models  — direct chat completions against the same Foundry model
+                      deployment (no hosted agents required).
+
 Usage::
 
     from trip_planner.config import TripPlannerConfig
@@ -9,9 +18,8 @@ Usage::
 from __future__ import annotations
 
 import os
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
-from typing import Optional
 
 from dotenv import load_dotenv
 
@@ -20,11 +28,10 @@ load_dotenv(override=False)
 
 
 class BackendMode(str, Enum):
-    """Supported runtime backends."""
+    """Supported runtime backends — all backed by Azure AI Foundry."""
 
-    GITHUB_MODELS = "github_models"
-    FOUNDRY = "foundry"
-    DEMO = "demo"  # deterministic template responses — no external calls
+    FOUNDRY = "foundry"                # hosted multi-agent workflow
+    FOUNDRY_MODELS = "foundry_models"  # direct model inference
 
 
 @dataclass
@@ -33,12 +40,8 @@ class TripPlannerConfig:
 
     backend: BackendMode
 
-    # ---------- GitHub Models ----------
-    github_token: Optional[str]
-    github_model_name: str
-
     # ---------- Azure AI Foundry ----------
-    foundry_project_endpoint: Optional[str]
+    foundry_project_endpoint: str
     foundry_model_name: str
 
     # ---------- Optional MCP ----------
@@ -51,43 +54,33 @@ class TripPlannerConfig:
     def from_env(cls) -> "TripPlannerConfig":
         """Build a config from the current environment.
 
-        Falls back to ``BackendMode.DEMO`` when the requested backend lacks
-        the required credentials so the demo never crashes on missing secrets.
+        Raises:
+            ValueError: if ``TRIP_BACKEND`` is unknown, or if
+                ``FOUNDRY_PROJECT_ENDPOINT`` is not set.  The project is
+                Foundry-only, so there is no silent fallback.
         """
-        raw = os.getenv("TRIP_BACKEND", "demo").lower().strip()
+        raw = os.getenv("TRIP_BACKEND", BackendMode.FOUNDRY.value).lower().strip()
         try:
-            requested = BackendMode(raw)
-        except ValueError:
-            requested = BackendMode.DEMO
+            backend = BackendMode(raw)
+        except ValueError as exc:
+            valid = ", ".join(m.value for m in BackendMode)
+            raise ValueError(
+                f"Unknown TRIP_BACKEND={raw!r}. Valid options: {valid}."
+            ) from exc
 
-        # Auto-downgrade to demo when credentials are absent
-        backend = _resolve_backend(requested)
+        endpoint = os.getenv("FOUNDRY_PROJECT_ENDPOINT", "").strip()
+        if not endpoint:
+            raise ValueError(
+                "FOUNDRY_PROJECT_ENDPOINT is required — this project runs on "
+                "Azure AI Foundry only.  Set it to your project endpoint, e.g.\n"
+                "  https://<resource>.services.ai.azure.com/api/projects/<project>\n"
+                "and run `az login` (or configure a service principal) first."
+            )
 
         return cls(
             backend=backend,
-            github_token=os.getenv("GITHUB_TOKEN"),
-            github_model_name=os.getenv("GITHUB_MODEL_NAME", "gpt-4o-mini"),
-            foundry_project_endpoint=os.getenv("FOUNDRY_PROJECT_ENDPOINT"),
+            foundry_project_endpoint=endpoint,
             foundry_model_name=os.getenv("FOUNDRY_MODEL_NAME", "gpt-5-mini"),
             mcp_enabled=os.getenv("MCP_ENABLED", "false").lower() == "true",
             output_dir=os.getenv("TRIP_OUTPUT_DIR", "output"),
         )
-
-    @property
-    def is_demo_mode(self) -> bool:
-        return self.backend == BackendMode.DEMO
-
-
-def _resolve_backend(requested: BackendMode) -> BackendMode:
-    """Return the *effective* backend, falling back to DEMO when creds are missing."""
-    if requested == BackendMode.GITHUB_MODELS:
-        if os.getenv("GITHUB_TOKEN"):
-            return BackendMode.GITHUB_MODELS
-        return BackendMode.DEMO
-
-    if requested == BackendMode.FOUNDRY:
-        if os.getenv("FOUNDRY_PROJECT_ENDPOINT"):
-            return BackendMode.FOUNDRY
-        return BackendMode.DEMO
-
-    return BackendMode.DEMO
