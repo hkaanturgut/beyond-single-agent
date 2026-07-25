@@ -1,83 +1,241 @@
 # Beyond a Single Agent — Trip Planner Demo
 
-This repository is a **spec-first** Python multi-agent trip planner built for two talks:
+A Python multi-agent workflow that plans a personalised 3-day trip using **Azure AI Foundry Agent Service** and a concurrent + conditional orchestration pattern.
 
-- [Python Toronto](talks/python-toronto/README.md): concise code walkthrough focused on concurrent + conditional workflow patterns.
-- [Malta Microsoft AI User Group](talks/malta/README.md): deeper platform narrative focused on Azure AI Foundry, Bicep infra, YAML workflows, MCP tools, and production concerns.
+> **User prompt:** _"Plan my 3-day trip to Valletta in April with budget $2200"_
 
-## Scenario
+---
 
-User prompt:
+## How it works
 
-> Plan my 3-day trip to `<destination>` in `<month>` with budget `$<amount>`
-
-Workflow:
-
-1. **Fan-out** — `ResearcherAgent`, `PlannerAgent`, `BudgetAgent` run concurrently (`ConcurrentBuilder`).
-2. **Fan-in** — aggregator merges outputs into one `TripProposal`.
-3. **Conditional route** (`add_multi_selection_edge_group`):
-   - If over budget or schedule conflicts → `OptimizerAgent`
-   - Else → `FinalizerAgent`
-4. **Output** — polished markdown brief saved to `output/trip-<destination>-<timestamp>.md`.
-
-## Quick start
-
-```bash
-# Clone and set up
-python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-cp .env.example .env
-
-# Demo mode — no credentials needed
-python -m trip_planner "Plan my 3-day trip to Lisbon in May with budget \$2600"
-
-# With GitHub token (live LLM responses)
-TRIP_BACKEND=github_models GITHUB_TOKEN=<token> \
-  python -m trip_planner "Plan my 3-day trip to Kyoto in October with budget \$1800"
+```
+User prompt
+    │
+    ▼
+┌─────────────────────────────────────────────┐
+│  Fan-out (concurrent)                        │
+│  ┌───────────────┐  ┌───────────────┐  ┌──────────────┐ │
+│  │ ResearchAgent │  │  PlannerAgent │  │  BudgetAgent │ │
+│  └───────┬───────┘  └──────┬────────┘  └──────┬───────┘ │
+└──────────┼────────────────┼───────────────────┼─────────┘
+           └────────────────▼───────────────────┘
+                    Fan-in Aggregator
+                           │
+              ┌────────────▼────────────┐
+              │   Conditional Router    │
+              │ over budget / conflicts │
+              └────────┬────────────────┘
+             yes       │       no
+        ┌──────────────┘        └──────────────┐
+        ▼                                       ▼
+ OptimizerAgent                          FinalizerAgent
+        └──────────────┐
+                       ▼
+                  FinalizerAgent
+                       │
+                       ▼
+          output/trip-valletta-<timestamp>.md
 ```
 
-## Runtime backends
+Each agent is a **hosted PromptAgent** registered in Foundry Agent Service (visible in the Foundry UI under **Agents → My agents**). The Python workflow layer (`WorkflowBuilder + ConcurrentBuilder`) orchestrates concurrent execution and conditional routing.
 
-| `TRIP_BACKEND` | Description | Requires |
-|---|---|---|
-| `demo` (default) | Deterministic template responses — no external calls | Nothing |
-| `github_models` | GitHub Models OpenAI-compatible API | `GITHUB_TOKEN` |
-| `foundry` | Azure AI Foundry via `AIProjectClient` | `FOUNDRY_PROJECT_ENDPOINT` + Azure auth |
+---
 
-## Azure deployment via GitHub Actions
+## Prerequisites
 
-The `Deploy Azure infrastructure` workflow provisions the Azure side of the demo:
-
-- Storage account
-- Log Analytics workspace
-- Application Insights
-- Foundry hub
-- Foundry project
-- Azure AI Services account
-- `gpt-5-mini` model deployment
-- Hub-to-model connection
-
-One-time setup:
-
-1. Create a Microsoft Entra application or user-assigned managed identity with a federated credential for this repository.
-2. Grant it `Contributor` on the target resource group.
-3. Add these GitHub secrets: `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`.
-4. Run the workflow from the **Actions** tab and copy the `foundryProjectEndpoint` output into `.env`.
-
-## Repository map
-
-| Path | Purpose |
+| Tool | Version |
 |---|---|
-| `src/trip_planner/` | Main Python package — agents, workflow, backends, models |
-| `src/trip_planner/workflow/builder.py` | `WorkflowBuilder`, `ConcurrentBuilder`, routing |
-| `src/trip_planner/agents/` | Five specialist agents |
-| `src/trip_planner/backends/` | Backend adapters + factory |
-| `infra/` | Bicep templates for Foundry hub, project, AI Services model, and observability |
+| Python | 3.11+ |
+| Azure CLI | latest (`az --version`) |
+| Azure subscription | Owner or Contributor access |
+| GitHub account | For GitHub Models free tier (optional) |
+
+---
+
+## Quick start — local demo (no Azure)
+
+```bash
+# 1. Clone and create virtual environment
+git clone https://github.com/hkaanturgut/beyond-single-agent
+cd beyond-single-agent
+python3 -m venv .venv && source .venv/bin/activate
+
+# 2. Install dependencies
+pip install -r requirements.txt
+
+# 3. Run in demo mode (no credentials required)
+python3 -m trip_planner "Plan my 3-day trip to Valletta in April with budget \$2200"
+```
+
+The output markdown is saved to `output/trip-valletta-<timestamp>.md`.
+
+---
+
+## Quick start — GitHub Models (free tier with live LLM)
+
+```bash
+# 1. Get a free GitHub token with Models access
+#    https://github.com/settings/tokens  (classic, no scopes needed)
+
+# 2. Copy and fill in .env
+cp .env.example .env
+# Set: TRIP_BACKEND=github_models  and  GITHUB_TOKEN=<your token>
+
+# 3. Run
+python3 -m trip_planner "Plan my 3-day trip to Valletta in April with budget \$2200"
+```
+
+---
+
+## Full setup — Azure AI Foundry (production)
+
+### Step 1: Azure login
+
+```bash
+az login --tenant ffe3d4fb-2c1a-4bee-be2f-4b6e78f182c9
+az account set --subscription fc4b39c5-adad-4de0-a91a-06dd08aa2e8f
+```
+
+### Step 2: Deploy Azure infrastructure
+
+The GitHub Actions workflow provisions all Azure resources (Foundry Hub, Project, AI Services, model deployment):
+
+1. Go to **Actions → Deploy Azure infrastructure and agents → Run workflow**
+2. Use defaults: region `eastus`, resource group `rg-beyond-single-agent`
+3. Wait ~5 minutes for deployment to complete
+4. Copy the `FOUNDRY_PROJECT_ENDPOINT` from the job summary
+
+Or deploy from CLI:
+
+```bash
+az group create --name rg-beyond-single-agent --location eastus
+
+az deployment group create \
+  --resource-group rg-beyond-single-agent \
+  --template-file infra/main.bicep \
+  --parameters infra/main.parameters.bicepparam \
+  developerPrincipalIds="[\"$(az ad signed-in-user show --query id -o tsv)\"]"
+```
+
+### Step 3: Grant yourself Foundry access
+
+```bash
+# Get your object ID
+MY_OID=$(az ad signed-in-user show --query id -o tsv)
+AI_SERVICES_NAME=$(az resource list --resource-group rg-beyond-single-agent \
+  --query "[?kind=='AIServices'].name" -o tsv)
+
+az role assignment create \
+  --role "Azure AI Developer" \
+  --assignee "$MY_OID" \
+  --scope "/subscriptions/fc4b39c5-adad-4de0-a91a-06dd08aa2e8f/resourceGroups/rg-beyond-single-agent/providers/Microsoft.CognitiveServices/accounts/$AI_SERVICES_NAME"
+```
+
+> **Tip:** Pass your OID in `developerPrincipalIds` during deployment (Step 2) to skip this step.
+
+### Step 4: Deploy the agents to Foundry
+
+```bash
+# Set your Foundry endpoint (from Step 2 output)
+export FOUNDRY_PROJECT_ENDPOINT=https://trip-planner-prod.services.ai.azure.com/api/projects/trip-planner-prod
+
+# Deploy all 5 agents to Foundry Agent Service
+python3 scripts/deploy_agents.py
+```
+
+You should see:
+```
+=== Trip Planner — Foundry Agent Deployment ===
+
+Connecting to Foundry project: https://...
+  → Deploying researcher-agent ... v1 ✓
+  → Deploying planner-agent ...    v1 ✓
+  → Deploying budget-agent ...     v1 ✓
+  → Deploying optimizer-agent ...  v1 ✓
+  → Deploying finalizer-agent ...  v1 ✓
+
+All agents deployed successfully.
+View them in the Foundry UI: Agents → My agents
+```
+
+### Step 5: Run the trip planner with Foundry agents
+
+```bash
+# Configure .env
+cp .env.example .env
+# Set:
+#   TRIP_BACKEND=foundry
+#   FOUNDRY_PROJECT_ENDPOINT=https://trip-planner-prod.services.ai.azure.com/api/projects/trip-planner-prod
+
+python3 -m trip_planner "Plan my 3-day trip to Valletta in April with budget \$2200"
+```
+
+---
+
+## Environment variables
+
+| Variable | Required for | Description |
+|---|---|---|
+| `TRIP_BACKEND` | always | `demo` \| `github_models` \| `foundry` |
+| `GITHUB_TOKEN` | github_models | GitHub PAT with Models access |
+| `GITHUB_MODEL_NAME` | github_models | default `gpt-4o-mini` |
+| `FOUNDRY_PROJECT_ENDPOINT` | foundry | `https://<resource>.services.ai.azure.com/api/projects/<project>` |
+| `FOUNDRY_MODEL_NAME` | foundry | model deployment name, default `gpt-5-mini` |
+
+---
+
+## Repository layout
+
+| Path | What it is |
+|---|---|
+| `src/trip_planner/` | Main Python package |
+| `src/trip_planner/agents/` | Five specialist agents (researcher, planner, budget, optimizer, finalizer) |
+| `src/trip_planner/backends/foundry_agents.py` | Foundry multi-agent backend — routes each call to the right hosted agent |
+| `src/trip_planner/workflow/builder.py` | `WorkflowBuilder` + `ConcurrentBuilder` — concurrent fan-out and conditional routing |
+| `scripts/deploy_agents.py` | Registers agents in Foundry Agent Service (run once after infra deploy) |
+| `infra/` | Bicep templates — Foundry Hub, Project, AI Services, model, RBAC |
+| `workflows/trip-planner-pipeline.yaml` | Human-readable workflow descriptor |
 | `tests/` | Unit, integration, and contract tests |
 | `output/` | Generated trip-brief markdown files (git-ignored) |
-| `workflows/trip-planner-pipeline.yaml` | Human-readable YAML workflow descriptor |
-| `specs/001-trip-planner-demo/` | Spec, plan, tasks, contracts, quickstart |
-| `talks/malta/` | Malta-focused talk narrative |
+| `specs/001-trip-planner-demo/` | Spec, plan, tasks (spec-kit format) |
+
+---
+
+## Running tests
+
+```bash
+pip install -r requirements.txt
+pytest tests/ -v
+```
+
+---
+
+## Azure resources deployed
+
+| Resource | Purpose |
+|---|---|
+| Foundry Hub | Workspace container for projects |
+| Foundry Project | Agent Service project — hosts the 5 agents |
+| AI Services account | Model endpoint (`gpt-5-mini`) |
+| Log Analytics + App Insights | Observability and telemetry |
+| Storage Account | Required backing store for Foundry |
+
+---
+
+## Troubleshooting
+
+**"Unable to access your agents"** in Foundry UI  
+→ You need the `Azure AI Developer` role on the AI Services account. Run Step 3 above.
+
+**"FOUNDRY_PROJECT_ENDPOINT is not set"**  
+→ Copy the endpoint from the GitHub Actions job summary or run `az deployment group show`.
+
+**Demo mode falls back automatically**  
+→ If `FOUNDRY_PROJECT_ENDPOINT` is missing, the app defaults to `demo` mode (no Azure required). Set the env var to use Foundry.
+
+**Model deployment quota issues**  
+→ `gpt-5-mini` with `GlobalStandard` SKU is used. If quota is exceeded, change `modelDeploymentName` in `infra/main.parameters.bicepparam` to a model available in your subscription.
+
 | `talks/python-toronto/` | Python Toronto-focused talk narrative |
 | `demos/trip_planner/` | Sample invocations |
 | `.specify/` | Spec Kit templates, scripts, and workflow metadata |

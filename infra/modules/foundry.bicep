@@ -6,6 +6,7 @@
 //   - Azure AI Services account (AIServices)
 //   - Model deployment (Azure OpenAI compatible) inside the AI Services account
 //   - Hub connection to the model endpoint
+//   - RBAC: Azure AI Developer role for deployer and optional user principals
 // ---------------------------------------------------------------------------
 
 @description('Name of the Foundry Hub workspace.')
@@ -43,6 +44,9 @@ param storageAccountId string
 
 @description('Resource ID of Application Insights (optional but recommended).')
 param appInsightsId string = ''
+
+@description('Principal IDs that should receive the Azure AI Developer role on the AI Services account. Enables Foundry UI access and agent management.')
+param developerPrincipalIds array = []
 
 // ---------------------------------------------------------------------------
 // Foundry Hub
@@ -143,6 +147,23 @@ resource modelConnection 'Microsoft.MachineLearningServices/workspaces/connectio
     modelDeployment
   ]
 }
+
+// ---------------------------------------------------------------------------
+// RBAC: Grant Azure AI Developer on the AI Services account
+// Azure AI Developer allows data-plane operations: create/run agents,
+// call model endpoints, and view agents in the Foundry UI.
+// ---------------------------------------------------------------------------
+var aiDeveloperRoleId = '64702f94-c441-49e6-a78b-ef80e0188fee' // Azure AI Developer
+
+resource aiDeveloperRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = [for principalId in developerPrincipalIds: {
+  name: guid(aiServicesAccount.id, principalId, aiDeveloperRoleId)
+  scope: aiServicesAccount
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', aiDeveloperRoleId)
+    principalId: principalId
+    principalType: 'ServicePrincipal'
+  }
+}]
 
 // ---------------------------------------------------------------------------
 // Outputs

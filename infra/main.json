@@ -1,0 +1,463 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.42.1.51946",
+      "templateHash": "15330910953702982702"
+    }
+  },
+  "parameters": {
+    "environmentName": {
+      "type": "string",
+      "defaultValue": "dev",
+      "metadata": {
+        "description": "Short environment label used as a resource-name suffix."
+      }
+    },
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]",
+      "metadata": {
+        "description": "Azure region for all resources."
+      }
+    },
+    "foundryHubName": {
+      "type": "string",
+      "defaultValue": "[format('foundry-trip-planner-{0}', parameters('environmentName'))]",
+      "metadata": {
+        "description": "Name of the Foundry Hub resource."
+      }
+    },
+    "foundryProjectName": {
+      "type": "string",
+      "defaultValue": "[format('trip-planner-{0}', parameters('environmentName'))]",
+      "metadata": {
+        "description": "Name of the Foundry Project resource."
+      }
+    },
+    "aiServicesAccountName": {
+      "type": "string",
+      "defaultValue": "[format('aitrip{0}', uniqueString(resourceGroup().id, parameters('environmentName')))]",
+      "metadata": {
+        "description": "Name of the Azure AI Services account that hosts the deployed model."
+      }
+    },
+    "modelDeploymentName": {
+      "type": "string",
+      "defaultValue": "gpt-5-mini",
+      "metadata": {
+        "description": "Model deployment name inside the Foundry project."
+      }
+    },
+    "modelPublisherFormat": {
+      "type": "string",
+      "defaultValue": "OpenAI",
+      "metadata": {
+        "description": "Model provider format for deployment (OpenAI for Azure OpenAI models)."
+      }
+    },
+    "modelVersion": {
+      "type": "string",
+      "defaultValue": "2025-08-07",
+      "metadata": {
+        "description": "Model version available in the selected region/subscription."
+      }
+    },
+    "modelSkuName": {
+      "type": "string",
+      "defaultValue": "GlobalStandard",
+      "metadata": {
+        "description": "Model deployment SKU name available in the selected region/subscription."
+      }
+    },
+    "modelCapacity": {
+      "type": "int",
+      "defaultValue": 1,
+      "metadata": {
+        "description": "Model deployment capacity."
+      }
+    },
+    "tags": {
+      "type": "object",
+      "defaultValue": {
+        "project": "beyond-single-agent",
+        "environment": "[parameters('environmentName')]"
+      },
+      "metadata": {
+        "description": "Tags applied to all resources."
+      }
+    },
+    "developerPrincipalIds": {
+      "type": "array",
+      "defaultValue": [],
+      "metadata": {
+        "description": "List of principal IDs (object IDs) that receive Azure AI Developer role. Add your own AAD object ID to access the Foundry UI agents page."
+      }
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Storage/storageAccounts",
+      "apiVersion": "2023-01-01",
+      "name": "[format('sttrip{0}', uniqueString(resourceGroup().id, parameters('environmentName')))]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "sku": {
+        "name": "Standard_LRS"
+      },
+      "kind": "StorageV2",
+      "properties": {
+        "supportsHttpsTrafficOnly": true,
+        "minimumTlsVersion": "TLS1_2",
+        "allowBlobPublicAccess": false
+      }
+    },
+    {
+      "type": "Microsoft.OperationalInsights/workspaces",
+      "apiVersion": "2022-10-01",
+      "name": "[format('log-trip-{0}', parameters('environmentName'))]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "properties": {
+        "sku": {
+          "name": "PerGB2018"
+        },
+        "retentionInDays": 30
+      }
+    },
+    {
+      "type": "Microsoft.Insights/components",
+      "apiVersion": "2020-02-02",
+      "name": "[format('appi-trip-{0}', parameters('environmentName'))]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "kind": "web",
+      "properties": {
+        "Application_Type": "web",
+        "WorkspaceResourceId": "[resourceId('Microsoft.OperationalInsights/workspaces', format('log-trip-{0}', parameters('environmentName')))]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.OperationalInsights/workspaces', format('log-trip-{0}', parameters('environmentName')))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "foundry-deploy",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "hubName": {
+            "value": "[parameters('foundryHubName')]"
+          },
+          "projectName": {
+            "value": "[parameters('foundryProjectName')]"
+          },
+          "aiServicesAccountName": {
+            "value": "[parameters('aiServicesAccountName')]"
+          },
+          "modelDeploymentName": {
+            "value": "[parameters('modelDeploymentName')]"
+          },
+          "modelPublisherFormat": {
+            "value": "[parameters('modelPublisherFormat')]"
+          },
+          "modelVersion": {
+            "value": "[parameters('modelVersion')]"
+          },
+          "modelSkuName": {
+            "value": "[parameters('modelSkuName')]"
+          },
+          "modelCapacity": {
+            "value": "[parameters('modelCapacity')]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "tags": {
+            "value": "[parameters('tags')]"
+          },
+          "storageAccountId": {
+            "value": "[resourceId('Microsoft.Storage/storageAccounts', format('sttrip{0}', uniqueString(resourceGroup().id, parameters('environmentName'))))]"
+          },
+          "appInsightsId": {
+            "value": "[resourceId('Microsoft.Insights/components', format('appi-trip-{0}', parameters('environmentName')))]"
+          },
+          "developerPrincipalIds": {
+            "value": "[parameters('developerPrincipalIds')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.42.1.51946",
+              "templateHash": "6690355112385310274"
+            }
+          },
+          "parameters": {
+            "hubName": {
+              "type": "string",
+              "metadata": {
+                "description": "Name of the Foundry Hub workspace."
+              }
+            },
+            "projectName": {
+              "type": "string",
+              "metadata": {
+                "description": "Name of the Foundry Project workspace."
+              }
+            },
+            "aiServicesAccountName": {
+              "type": "string",
+              "metadata": {
+                "description": "Name of the Azure AI Services account backing the model deployment."
+              }
+            },
+            "modelDeploymentName": {
+              "type": "string",
+              "defaultValue": "gpt-5-mini",
+              "metadata": {
+                "description": "Model deployment name (e.g. gpt-5-mini)."
+              }
+            },
+            "modelPublisherFormat": {
+              "type": "string",
+              "defaultValue": "OpenAI",
+              "metadata": {
+                "description": "Model provider format (for Azure OpenAI models, use OpenAI)."
+              }
+            },
+            "modelVersion": {
+              "type": "string",
+              "defaultValue": "2025-08-07",
+              "metadata": {
+                "description": "Model version available in the target region/subscription."
+              }
+            },
+            "modelSkuName": {
+              "type": "string",
+              "defaultValue": "GlobalStandard",
+              "metadata": {
+                "description": "Model deployment SKU name available in the target region/subscription."
+              }
+            },
+            "modelCapacity": {
+              "type": "int",
+              "defaultValue": 1,
+              "metadata": {
+                "description": "Model deployment capacity."
+              }
+            },
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "Azure region."
+              }
+            },
+            "tags": {
+              "type": "object",
+              "defaultValue": {},
+              "metadata": {
+                "description": "Resource tags."
+              }
+            },
+            "storageAccountId": {
+              "type": "string",
+              "metadata": {
+                "description": "Resource ID of the backing Storage Account."
+              }
+            },
+            "appInsightsId": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Resource ID of Application Insights (optional but recommended)."
+              }
+            },
+            "developerPrincipalIds": {
+              "type": "array",
+              "defaultValue": [],
+              "metadata": {
+                "description": "Principal IDs that should receive the Azure AI Developer role on the AI Services account. Enables Foundry UI access and agent management."
+              }
+            }
+          },
+          "variables": {
+            "aiDeveloperRoleId": "64702f94-c441-49e6-a78b-ef80e0188fee"
+          },
+          "resources": [
+            {
+              "type": "Microsoft.MachineLearningServices/workspaces",
+              "apiVersion": "2024-04-01",
+              "name": "[parameters('hubName')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "identity": {
+                "type": "SystemAssigned"
+              },
+              "kind": "Hub",
+              "properties": {
+                "description": "Azure AI Foundry Hub for the trip-planner demo",
+                "storageAccount": "[parameters('storageAccountId')]",
+                "applicationInsights": "[if(not(equals(parameters('appInsightsId'), '')), parameters('appInsightsId'), null())]",
+                "publicNetworkAccess": "Enabled"
+              }
+            },
+            {
+              "type": "Microsoft.MachineLearningServices/workspaces",
+              "apiVersion": "2024-04-01",
+              "name": "[parameters('projectName')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "identity": {
+                "type": "SystemAssigned"
+              },
+              "kind": "Project",
+              "properties": {
+                "description": "Trip Planner demo project",
+                "hubResourceId": "[resourceId('Microsoft.MachineLearningServices/workspaces', parameters('hubName'))]",
+                "publicNetworkAccess": "Enabled"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.MachineLearningServices/workspaces', parameters('hubName'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.CognitiveServices/accounts",
+              "apiVersion": "2023-05-01",
+              "name": "[parameters('aiServicesAccountName')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "identity": {
+                "type": "SystemAssigned"
+              },
+              "kind": "AIServices",
+              "sku": {
+                "name": "S0"
+              },
+              "properties": {
+                "customSubDomainName": "[parameters('aiServicesAccountName')]",
+                "publicNetworkAccess": "Enabled",
+                "networkAcls": {
+                  "defaultAction": "Allow"
+                },
+                "disableLocalAuth": true
+              }
+            },
+            {
+              "type": "Microsoft.CognitiveServices/accounts/deployments",
+              "apiVersion": "2024-04-01-preview",
+              "name": "[format('{0}/{1}', parameters('aiServicesAccountName'), parameters('modelDeploymentName'))]",
+              "sku": {
+                "name": "[parameters('modelSkuName')]",
+                "capacity": "[parameters('modelCapacity')]"
+              },
+              "properties": {
+                "model": {
+                  "format": "[parameters('modelPublisherFormat')]",
+                  "name": "[parameters('modelDeploymentName')]",
+                  "version": "[parameters('modelVersion')]"
+                },
+                "raiPolicyName": "Microsoft.DefaultV2"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.CognitiveServices/accounts', parameters('aiServicesAccountName'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.MachineLearningServices/workspaces/connections",
+              "apiVersion": "2024-04-01-preview",
+              "name": "[format('{0}/{1}', parameters('hubName'), 'foundry-models')]",
+              "properties": {
+                "category": "AIServices",
+                "target": "[format('https://{0}.services.ai.azure.com/models', parameters('aiServicesAccountName'))]",
+                "authType": "AAD",
+                "isSharedToAll": true,
+                "metadata": {
+                  "ApiType": "Azure",
+                  "ResourceId": "[resourceId('Microsoft.CognitiveServices/accounts', parameters('aiServicesAccountName'))]"
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.CognitiveServices/accounts', parameters('aiServicesAccountName'))]",
+                "[resourceId('Microsoft.MachineLearningServices/workspaces', parameters('hubName'))]",
+                "[resourceId('Microsoft.MachineLearningServices/workspaces', parameters('projectName'))]",
+                "[resourceId('Microsoft.CognitiveServices/accounts/deployments', parameters('aiServicesAccountName'), parameters('modelDeploymentName'))]"
+              ]
+            },
+            {
+              "copy": {
+                "name": "aiDeveloperRoleAssignment",
+                "count": "[length(parameters('developerPrincipalIds'))]"
+              },
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2022-04-01",
+              "scope": "[resourceId('Microsoft.CognitiveServices/accounts', parameters('aiServicesAccountName'))]",
+              "name": "[guid(resourceId('Microsoft.CognitiveServices/accounts', parameters('aiServicesAccountName')), parameters('developerPrincipalIds')[copyIndex()], variables('aiDeveloperRoleId'))]",
+              "properties": {
+                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('aiDeveloperRoleId'))]",
+                "principalId": "[parameters('developerPrincipalIds')[copyIndex()]]",
+                "principalType": "ServicePrincipal"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.CognitiveServices/accounts', parameters('aiServicesAccountName'))]"
+              ]
+            }
+          ],
+          "outputs": {
+            "hubId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.MachineLearningServices/workspaces', parameters('hubName'))]"
+            },
+            "projectId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.MachineLearningServices/workspaces', parameters('projectName'))]"
+            },
+            "projectEndpoint": {
+              "type": "string",
+              "value": "[format('https://{0}.services.ai.azure.com/api/projects/{1}', parameters('projectName'), parameters('projectName'))]"
+            },
+            "modelsAccountId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.CognitiveServices/accounts', parameters('aiServicesAccountName'))]"
+            },
+            "modelsEndpoint": {
+              "type": "string",
+              "value": "[format('https://{0}.services.ai.azure.com/models', parameters('aiServicesAccountName'))]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Insights/components', format('appi-trip-{0}', parameters('environmentName')))]",
+        "[resourceId('Microsoft.Storage/storageAccounts', format('sttrip{0}', uniqueString(resourceGroup().id, parameters('environmentName'))))]"
+      ]
+    }
+  ],
+  "outputs": {
+    "foundryProjectEndpoint": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'foundry-deploy'), '2025-04-01').outputs.projectEndpoint.value]"
+    },
+    "foundryModelsEndpoint": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'foundry-deploy'), '2025-04-01').outputs.modelsEndpoint.value]"
+    },
+    "storageAccountName": {
+      "type": "string",
+      "value": "[format('sttrip{0}', uniqueString(resourceGroup().id, parameters('environmentName')))]"
+    },
+    "appInsightsConnectionString": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Insights/components', format('appi-trip-{0}', parameters('environmentName'))), '2020-02-02').ConnectionString]"
+    }
+  }
+}

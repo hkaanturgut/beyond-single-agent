@@ -48,6 +48,9 @@ param tags object = {
   environment: environmentName
 }
 
+@description('List of principal IDs (object IDs) that receive Azure AI Developer role. Add your own AAD object ID to access the Foundry UI agents page.')
+param developerPrincipalIds array = []
+
 // ---------------------------------------------------------------------------
 // Storage account — required backing store for the Foundry resource
 // ---------------------------------------------------------------------------
@@ -110,6 +113,7 @@ module foundry 'modules/foundry.bicep' = {
     tags: tags
     storageAccountId: storageAccount.id
     appInsightsId: appInsights.id
+    developerPrincipalIds: developerPrincipalIds
   }
 }
 
