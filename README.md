@@ -205,16 +205,36 @@ rm -f .env          # optional: clear the captured endpoint
 > `--no-wait` returns immediately; the deletion continues in the background.
 > Verify later with `az group exists --name "$RG"` (prints `false` once gone).
 
-> **Testing from scratch repeatedly?** AI Services accounts are *soft-deleted*
-> and keep holding your model quota until purged. If a later deployment fails on
-> quota, purge the soft-deleted account:
->
-> ```bash
-> az cognitiveservices account list-deleted \
->   --query "[].{name:name, location:location, rg:resourceGroup}" -o table
-> az cognitiveservices account purge \
->   --name <deleted-account-name> --location "$LOCATION" --resource-group "$RG"
-> ```
+### Step 7: Reclaim quota — purge soft-deleted accounts
+
+**Important when re-deploying (e.g. before a demo).** Deleting the resource
+group only *soft-deletes* the AI Services (Cognitive Services) account, and its
+`gpt-5-mini` deployment **keeps holding your model quota until you purge it**. If
+you deploy repeatedly, this silently eats your quota and a later deployment fails
+with `429 rate_limit_exceeded` or an insufficient-quota error.
+
+First, check how much `gpt-5-mini` quota is free (need ≥ your `modelCapacity`):
+
+```bash
+az cognitiveservices usage list --location "$LOCATION" \
+  --query "[?name.value=='OpenAI.GlobalStandard.gpt-5-mini'].{used:currentValue, limit:limit}" -o table
+```
+
+Then purge **every** soft-deleted account (parses name/location/RG from each id,
+so it works even after the original resource group is gone):
+
+```bash
+az cognitiveservices account list-deleted -o tsv --query "[].id" | while read -r ID; do
+  NAME=$(basename "$ID")
+  LOC=$(echo "$ID" | sed -E 's#.*/locations/([^/]+)/.*#\1#')
+  RGN=$(echo "$ID" | sed -E 's#.*/resourceGroups/([^/]+)/.*#\1#')
+  echo "purging $NAME ($LOC, rg=$RGN)"
+  az cognitiveservices account purge --name "$NAME" --location "$LOC" --resource-group "$RGN"
+done
+```
+
+Re-run the quota check above to confirm the numbers dropped. Once
+`limit − used ≥ modelCapacity`, your next deployment will provision cleanly.
 
 ---
 
