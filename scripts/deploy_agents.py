@@ -107,16 +107,23 @@ def deploy_agents(endpoint: str) -> dict[str, str]:
     try:
         from azure.ai.projects import AIProjectClient
         from azure.ai.projects.models import PromptAgentDefinition
-        from azure.identity import DefaultAzureCredential
+        from azure.identity import DefaultAzureCredential, AzureCliCredential
     except ImportError as exc:
         print(f"ERROR: Missing dependency — {exc}")
         print("Run: pip install azure-ai-projects azure-identity")
         sys.exit(1)
 
     print(f"Connecting to Foundry project: {endpoint}")
+    # Use AzureCliCredential for local dev; DefaultAzureCredential for CI/CD
+    try:
+        credential = AzureCliCredential()
+        credential.get_token("https://ai.azure.com/.default")  # validate it works
+    except Exception:
+        credential = DefaultAzureCredential()
+
     client = AIProjectClient(
         endpoint=endpoint,
-        credential=DefaultAzureCredential(),
+        credential=credential,
     )
 
     deployed: dict[str, str] = {}

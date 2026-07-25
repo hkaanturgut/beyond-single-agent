@@ -80,16 +80,25 @@ class FoundryAgentsBackend(BackendAdapter):
         if self._project_client is None:
             try:
                 from azure.ai.projects import AIProjectClient  # type: ignore[import]
-                from azure.identity import DefaultAzureCredential  # type: ignore[import]
+                from azure.identity import AzureCliCredential, DefaultAzureCredential  # type: ignore[import]
             except ImportError as exc:
                 raise RuntimeError(
                     "azure-ai-projects and azure-identity are required.\n"
                     "Run: pip install azure-ai-projects azure-identity"
                 ) from exc
 
+            # Prefer AzureCliCredential for local dev (it uses the https://ai.azure.com
+            # scope that the AIProjectClient requires). Fall back to DefaultAzureCredential
+            # for CI/CD environments (managed identity, OIDC, etc.).
+            try:
+                cred = AzureCliCredential()
+                cred.get_token("https://ai.azure.com/.default")  # validate
+            except Exception:
+                cred = DefaultAzureCredential()
+
             self._project_client = AIProjectClient(
                 endpoint=self._project_endpoint,
-                credential=DefaultAzureCredential(),
+                credential=cred,
             )
             # get_openai_client() returns a sync openai.OpenAI-compatible client
             # configured to call the Foundry Responses API.

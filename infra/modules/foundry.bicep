@@ -1,33 +1,30 @@
 // infra/modules/foundry.bicep
 // ---------------------------------------------------------------------------
 // Deploys:
-//   - Azure AI Foundry Hub (MachineLearningServices workspace, kind=Hub)
-//   - Azure AI Foundry Project (kind=Project, linked to the hub)
-//   - Azure AI Services account (AIServices)
-//   - Model deployment (Azure OpenAI compatible) inside the AI Services account
-//   - Hub connection to the model endpoint
-//   - RBAC: Azure AI Developer role for deployer and optional user principals
+//   - Azure AI Services account (AIServices kind) - the new Foundry resource
+//   - Azure AI Foundry Project (CognitiveServices/accounts/projects) - new API
+//     This creates a project visible in the new Foundry UI accessible via:
+//     https://<ai-services>.services.ai.azure.com/api/projects/<project>
+//   - Model deployment (Azure OpenAI compatible)
+//   - RBAC: Azure AI Developer role for optional user principals
 // ---------------------------------------------------------------------------
 
-@description('Name of the Foundry Hub workspace.')
-param hubName string
-
-@description('Name of the Foundry Project workspace.')
-param projectName string
-
-@description('Name of the Azure AI Services account backing the model deployment.')
+@description('Name of the Azure AI Services account (becomes the services.ai.azure.com subdomain).')
 param aiServicesAccountName string
 
-@description('Model deployment name (e.g. gpt-5-mini).')
+@description('Name of the Foundry Project under the AI Services account.')
+param projectName string
+
+@description('Model deployment name.')
 param modelDeploymentName string = 'gpt-5-mini'
 
-@description('Model provider format (for Azure OpenAI models, use OpenAI).')
+@description('Model provider format.')
 param modelPublisherFormat string = 'OpenAI'
 
-@description('Model version available in the target region/subscription.')
+@description('Model version.')
 param modelVersion string = '2025-08-07'
 
-@description('Model deployment SKU name available in the target region/subscription.')
+@description('Model deployment SKU name.')
 param modelSkuName string = 'GlobalStandard'
 
 @description('Model deployment capacity.')
@@ -39,56 +36,14 @@ param location string
 @description('Resource tags.')
 param tags object = {}
 
-@description('Resource ID of the backing Storage Account.')
-param storageAccountId string
 
-@description('Resource ID of Application Insights (optional but recommended).')
-param appInsightsId string = ''
-
-@description('Principal IDs that should receive the Azure AI Developer role on the AI Services account. Enables Foundry UI access and agent management.')
+@description('Principal IDs that receive the Azure AI Developer role on the AI Services account.')
 param developerPrincipalIds array = []
 
 // ---------------------------------------------------------------------------
-// Foundry Hub
+// Azure AI Services account
 // ---------------------------------------------------------------------------
-resource foundryHub 'Microsoft.MachineLearningServices/workspaces@2024-04-01' = {
-  name: hubName
-  location: location
-  tags: tags
-  identity: {
-    type: 'SystemAssigned'
-  }
-  kind: 'Hub'
-  properties: {
-    description: 'Azure AI Foundry Hub for the trip-planner demo'
-    storageAccount: storageAccountId
-    applicationInsights: appInsightsId != '' ? appInsightsId : null
-    publicNetworkAccess: 'Enabled'
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Foundry Project (child of the Hub)
-// ---------------------------------------------------------------------------
-resource foundryProject 'Microsoft.MachineLearningServices/workspaces@2024-04-01' = {
-  name: projectName
-  location: location
-  tags: tags
-  identity: {
-    type: 'SystemAssigned'
-  }
-  kind: 'Project'
-  properties: {
-    description: 'Trip Planner demo project'
-    hubResourceId: foundryHub.id
-    publicNetworkAccess: 'Enabled'
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Azure AI Services account + model deployment
-// ---------------------------------------------------------------------------
-resource aiServicesAccount 'Microsoft.CognitiveServices/accounts@2023-05-01' = {
+resource aiServicesAccount 'Microsoft.CognitiveServices/accounts@2025-04-01-preview' = {
   name: aiServicesAccountName
   location: location
   tags: tags
@@ -105,11 +60,15 @@ resource aiServicesAccount 'Microsoft.CognitiveServices/accounts@2023-05-01' = {
     networkAcls: {
       defaultAction: 'Allow'
     }
-    disableLocalAuth: true
+    disableLocalAuth: false
+    allowProjectManagement: true
   }
 }
 
-resource modelDeployment 'Microsoft.CognitiveServices/accounts/deployments@2024-04-01-preview' = {
+// ---------------------------------------------------------------------------
+// Model deployment
+// ---------------------------------------------------------------------------
+resource modelDeployment 'Microsoft.CognitiveServices/accounts/deployments@2025-04-01-preview' = {
   parent: aiServicesAccount
   name: modelDeploymentName
   sku: {
@@ -127,33 +86,34 @@ resource modelDeployment 'Microsoft.CognitiveServices/accounts/deployments@2024-
 }
 
 // ---------------------------------------------------------------------------
-// Hub connection to the AI Services account
+// Foundry Project under the AI Services account
+// This is the new CognitiveServices project type that the azure-ai-projects
+// SDK v2+ and new Foundry UI require.
 // ---------------------------------------------------------------------------
-resource modelConnection 'Microsoft.MachineLearningServices/workspaces/connections@2024-04-01-preview' = {
-  parent: foundryHub
-  name: 'foundry-models'
+resource foundryProject 'Microsoft.CognitiveServices/accounts/projects@2025-04-01-preview' = {
+  parent: aiServicesAccount
+  name: projectName
+  location: location
+  tags: tags
+  identity: {
+    type: 'SystemAssigned'
+  }
   properties: {
-    category: 'AIServices'
-    target: 'https://${aiServicesAccountName}.services.ai.azure.com/models'
-    authType: 'AAD'
-    isSharedToAll: true
-    metadata: {
-      ApiType: 'Azure'
-      ResourceId: aiServicesAccount.id
-    }
+    description: 'Trip Planner multi-agent demo project'
+    displayName: 'Trip Planner'
   }
   dependsOn: [
-    foundryProject
     modelDeployment
   ]
 }
 
 // ---------------------------------------------------------------------------
-// RBAC: Grant Azure AI Developer on the AI Services account
-// Azure AI Developer allows data-plane operations: create/run agents,
-// call model endpoints, and view agents in the Foundry UI.
+// RBAC: Azure AI Developer + Foundry Owner on the AI Services account
+// Azure AI Developer: read models, call endpoints.
+// Foundry Owner: create/run/manage agents (Microsoft.CognitiveServices/* data actions).
 // ---------------------------------------------------------------------------
 var aiDeveloperRoleId = '64702f94-c441-49e6-a78b-ef80e0188fee' // Azure AI Developer
+var foundryOwnerRoleId = 'c883944f-8b7b-4483-af10-35834be79c4a' // Foundry Owner
 
 resource aiDeveloperRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = [for principalId in developerPrincipalIds: {
   name: guid(aiServicesAccount.id, principalId, aiDeveloperRoleId)
@@ -161,15 +121,24 @@ resource aiDeveloperRoleAssignment 'Microsoft.Authorization/roleAssignments@2022
   properties: {
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', aiDeveloperRoleId)
     principalId: principalId
-    principalType: 'ServicePrincipal'
+    principalType: 'User'
+  }
+}]
+
+resource foundryOwnerRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = [for principalId in developerPrincipalIds: {
+  name: guid(aiServicesAccount.id, principalId, foundryOwnerRoleId)
+  scope: aiServicesAccount
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', foundryOwnerRoleId)
+    principalId: principalId
+    principalType: 'User'
   }
 }]
 
 // ---------------------------------------------------------------------------
 // Outputs
 // ---------------------------------------------------------------------------
-output hubId string = foundryHub.id
 output projectId string = foundryProject.id
-output projectEndpoint string = 'https://${foundryProject.name}.services.ai.azure.com/api/projects/${foundryProject.name}'
 output modelsAccountId string = aiServicesAccount.id
+output projectEndpoint string = 'https://${aiServicesAccount.name}.services.ai.azure.com/api/projects/${foundryProject.name}'
 output modelsEndpoint string = 'https://${aiServicesAccount.name}.services.ai.azure.com/models'

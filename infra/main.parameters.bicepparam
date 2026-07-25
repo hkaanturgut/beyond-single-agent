@@ -8,8 +8,6 @@ using './main.bicep'
 
 param environmentName = 'prod'
 param location = 'eastus'
-param foundryHubName = 'foundry-trip-planner-prod'
-param foundryProjectName = 'trip-planner-prod'
 param modelDeploymentName = 'gpt-5-mini'
 param modelPublisherFormat = 'OpenAI'
 param modelVersion = '2025-08-07'

@@ -2,41 +2,36 @@
 // ---------------------------------------------------------------------------
 // Main deployment entry point for the Beyond a Single Agent — Trip Planner demo.
 // Deploys:
-//   - Azure AI Foundry hub
-//   - Foundry project
-//   - Azure AI Services account + model deployment
-//   - Hub-to-model connection
-//   - Storage Account (required by Foundry)
-//   - Application Insights (optional observability)
+//   - Azure AI Services account (new Foundry resource type)
+//   - Foundry Project (CognitiveServices/accounts/projects — new API)
+//   - Model deployment (gpt-5-mini by default)
+//   - Application Insights for observability
 // ---------------------------------------------------------------------------
 
 targetScope = 'resourceGroup'
 
 @description('Short environment label used as a resource-name suffix.')
-param environmentName string = 'dev'
+param environmentName string = 'prod'
 
 @description('Azure region for all resources.')
 param location string = resourceGroup().location
 
-@description('Name of the Foundry Hub resource.')
-param foundryHubName string = 'foundry-trip-planner-${environmentName}'
-
-@description('Name of the Foundry Project resource.')
-param foundryProjectName string = 'trip-planner-${environmentName}'
-
-@description('Name of the Azure AI Services account that hosts the deployed model.')
+@description('Name of the Azure AI Services account (also the services.ai.azure.com subdomain).')
 param aiServicesAccountName string = 'aitrip${uniqueString(resourceGroup().id, environmentName)}'
 
-@description('Model deployment name inside the Foundry project.')
+@description('Name of the Foundry Project.')
+param foundryProjectName string = 'trip-planner-${environmentName}'
+
+@description('Model deployment name.')
 param modelDeploymentName string = 'gpt-5-mini'
 
-@description('Model provider format for deployment (OpenAI for Azure OpenAI models).')
+@description('Model provider format.')
 param modelPublisherFormat string = 'OpenAI'
 
-@description('Model version available in the selected region/subscription.')
+@description('Model version.')
 param modelVersion string = '2025-08-07'
 
-@description('Model deployment SKU name available in the selected region/subscription.')
+@description('Model deployment SKU name.')
 param modelSkuName string = 'GlobalStandard'
 
 @description('Model deployment capacity.')
@@ -48,29 +43,11 @@ param tags object = {
   environment: environmentName
 }
 
-@description('List of principal IDs (object IDs) that receive Azure AI Developer role. Add your own AAD object ID to access the Foundry UI agents page.')
+@description('Azure AD principal IDs that receive Azure AI Developer role (for Foundry UI access).')
 param developerPrincipalIds array = []
 
 // ---------------------------------------------------------------------------
-// Storage account — required backing store for the Foundry resource
-// ---------------------------------------------------------------------------
-resource storageAccount 'Microsoft.Storage/storageAccounts@2023-01-01' = {
-  name: 'sttrip${uniqueString(resourceGroup().id, environmentName)}'
-  location: location
-  tags: tags
-  sku: {
-    name: 'Standard_LRS'
-  }
-  kind: 'StorageV2'
-  properties: {
-    supportsHttpsTrafficOnly: true
-    minimumTlsVersion: 'TLS1_2'
-    allowBlobPublicAccess: false
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Application Insights — optional but recommended for production observability
+// Application Insights — observability
 // ---------------------------------------------------------------------------
 resource logAnalyticsWorkspace 'Microsoft.OperationalInsights/workspaces@2022-10-01' = {
   name: 'log-trip-${environmentName}'
@@ -96,14 +73,13 @@ resource appInsights 'Microsoft.Insights/components@2020-02-02' = {
 }
 
 // ---------------------------------------------------------------------------
-// Azure AI Foundry Hub (Microsoft.MachineLearningServices/workspaces kind=Hub)
+// Azure AI Foundry (new CognitiveServices-based pattern)
 // ---------------------------------------------------------------------------
 module foundry 'modules/foundry.bicep' = {
   name: 'foundry-deploy'
   params: {
-    hubName: foundryHubName
-    projectName: foundryProjectName
     aiServicesAccountName: aiServicesAccountName
+    projectName: foundryProjectName
     modelDeploymentName: modelDeploymentName
     modelPublisherFormat: modelPublisherFormat
     modelVersion: modelVersion
@@ -111,16 +87,13 @@ module foundry 'modules/foundry.bicep' = {
     modelCapacity: modelCapacity
     location: location
     tags: tags
-    storageAccountId: storageAccount.id
-    appInsightsId: appInsights.id
     developerPrincipalIds: developerPrincipalIds
   }
 }
 
 // ---------------------------------------------------------------------------
-// Outputs — used by azd (azure.yaml) and the quickstart guide
+// Outputs
 // ---------------------------------------------------------------------------
 output foundryProjectEndpoint string = foundry.outputs.projectEndpoint
 output foundryModelsEndpoint string = foundry.outputs.modelsEndpoint
-output storageAccountName string = storageAccount.name
 output appInsightsConnectionString string = appInsights.properties.ConnectionString
