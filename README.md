@@ -76,9 +76,9 @@ python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 
 # 3. Point at your Foundry project and sign in
-cp .env.example .env         # set FOUNDRY_PROJECT_ENDPOINT
-az login --tenant ffe3d4fb-2c1a-4bee-be2f-4b6e78f182c9
-az account set --subscription fc4b39c5-adad-4de0-a91a-06dd08aa2e8f
+cp .env.example .env         # FOUNDRY_PROJECT_ENDPOINT is filled in during setup (Step 3 below)
+az login                     # add --tenant <your-tenant-id> if you have multiple tenants
+az account set --subscription <your-subscription-id>
 
 # 4. Run (hosted multi-agent workflow — deploy agents first, see below)
 python3 -m trip_planner "Plan my 3-day trip to Valletta in April with budget \$2200"
@@ -97,62 +97,73 @@ The output markdown is saved to `output/trip-valletta-<timestamp>.md`.
 
 ## Full setup — Azure AI Foundry (production)
 
+> **No hardcoded values.** Every command below reads from shell/`.env`
+> variables, and the Foundry endpoint is captured straight from your deployment
+> outputs into `.env`. You can deploy under any resource group / account name and
+> the demo will pick up the right values automatically.
+
+### Step 0: Set your deployment variables
+
+```bash
+# Change these freely — the rest of the guide reuses them.
+export RG=rg-beyond-single-agent
+export LOCATION=eastus
+```
+
 ### Step 1: Azure login
 
 ```bash
-az login --tenant ffe3d4fb-2c1a-4bee-be2f-4b6e78f182c9
-az account set --subscription fc4b39c5-adad-4de0-a91a-06dd08aa2e8f
+az login                                       # add --tenant <your-tenant-id> if needed
+az account set --subscription <your-subscription-id>
 ```
 
 ### Step 2: Deploy Azure infrastructure
 
-The GitHub Actions workflow provisions all Azure resources (Foundry Hub, Project, AI Services, model deployment):
-
-1. Go to **Actions → Deploy Azure infrastructure and agents → Run workflow**
-2. Use defaults: region `eastus`, resource group `rg-beyond-single-agent`
-3. Wait ~5 minutes for deployment to complete
-4. Copy the `FOUNDRY_PROJECT_ENDPOINT` from the job summary
-
-Or deploy from CLI:
+The Bicep template provisions all Azure resources (Foundry account, Project,
+model deployment, App Insights, Log Analytics) and grants you the
+`Azure AI Developer` role via `developerPrincipalIds`:
 
 ```bash
-az group create --name rg-beyond-single-agent --location eastus
+az group create --name "$RG" --location "$LOCATION"
 
 az deployment group create \
-  --resource-group rg-beyond-single-agent \
+  --resource-group "$RG" \
+  --name main \
   --template-file infra/main.bicep \
   --parameters infra/main.parameters.bicepparam \
   developerPrincipalIds="[\"$(az ad signed-in-user show --query id -o tsv)\"]"
 ```
 
-### Step 3: Grant yourself Foundry access
+> Prefer CI? Go to **Actions → Deploy Azure infrastructure and agents → Run
+> workflow** instead — it runs the same template.
 
-> **Already handled by Bicep.** The deployment in Step 2 assigns the `Azure AI Developer` role to every principal passed in `developerPrincipalIds` — and the CLI command above passes your own OID automatically. If you deployed that way, **skip this step**.
+### Step 3: Capture deployment outputs into `.env`
 
-Only run this if you need to grant access to a principal that was _not_ included in `developerPrincipalIds`:
+This is the key step that keeps everything dynamic — it reads the **actual**
+endpoint your deployment produced (whatever the resource was named) and writes
+it to `.env`, so no value is ever hardcoded:
 
 ```bash
-# Get your object ID
-MY_OID=$(az ad signed-in-user show --query id -o tsv)
+FOUNDRY_PROJECT_ENDPOINT=$(az deployment group show \
+  --resource-group "$RG" --name main \
+  --query properties.outputs.foundryProjectEndpoint.value -o tsv)
 
-# Resolve the AI Services *account* (filter by type, not kind — the child
-# project also reports kind=AIServices and would return a second value)
-AI_SERVICES_NAME=$(az resource list --resource-group rg-beyond-single-agent \
-  --query "[?type=='Microsoft.CognitiveServices/accounts'].name | [0]" -o tsv)
+cat > .env <<EOF
+TRIP_BACKEND=foundry
+FOUNDRY_PROJECT_ENDPOINT=$FOUNDRY_PROJECT_ENDPOINT
+FOUNDRY_MODEL_NAME=gpt-5-mini
+EOF
 
-az role assignment create \
-  --role "Azure AI Developer" \
-  --assignee "$MY_OID" \
-  --scope "/subscriptions/fc4b39c5-adad-4de0-a91a-06dd08aa2e8f/resourceGroups/rg-beyond-single-agent/providers/Microsoft.CognitiveServices/accounts/$AI_SERVICES_NAME"
+echo "Wrote .env:" && cat .env
 ```
+
+Both `scripts/deploy_agents.py` and `python3 -m trip_planner` load `.env`
+automatically, so you never pass the endpoint on the command line again.
 
 ### Step 4: Deploy the agents to Foundry
 
 ```bash
-# Set your Foundry endpoint (from Step 2 output)
-export FOUNDRY_PROJECT_ENDPOINT=https://trip-planner-prod.services.ai.azure.com/api/projects/trip-planner-prod
-
-# Deploy all 5 agents to Foundry Agent Service
+# Reads FOUNDRY_PROJECT_ENDPOINT from .env — no export needed.
 python3 scripts/deploy_agents.py
 ```
 
@@ -174,14 +185,36 @@ View them in the Foundry UI: Agents → My agents (each shows its attached tools
 ### Step 5: Run the trip planner with Foundry agents
 
 ```bash
-# Configure .env
-cp .env.example .env
-# Set:
-#   TRIP_BACKEND=foundry
-#   FOUNDRY_PROJECT_ENDPOINT=https://trip-planner-prod.services.ai.azure.com/api/projects/trip-planner-prod
-
+# All config comes from .env (written in Step 3).
 python3 -m trip_planner "Plan my 3-day trip to Valletta in April with budget \$2200"
 ```
+
+The output markdown is saved to `output/trip-valletta-<timestamp>.md`.
+
+### Step 6: Tear down everything
+
+When you're done, delete the resource group to remove **all** deployed
+resources (Foundry account, project, model deployment, App Insights, Log
+Analytics) in one shot:
+
+```bash
+az group delete --name "$RG" --yes --no-wait
+rm -f .env          # optional: clear the captured endpoint
+```
+
+> `--no-wait` returns immediately; the deletion continues in the background.
+> Verify later with `az group exists --name "$RG"` (prints `false` once gone).
+
+> **Testing from scratch repeatedly?** AI Services accounts are *soft-deleted*
+> and keep holding your model quota until purged. If a later deployment fails on
+> quota, purge the soft-deleted account:
+>
+> ```bash
+> az cognitiveservices account list-deleted \
+>   --query "[].{name:name, location:location, rg:resourceGroup}" -o table
+> az cognitiveservices account purge \
+>   --name <deleted-account-name> --location "$LOCATION" --resource-group "$RG"
+> ```
 
 ---
 
@@ -236,10 +269,25 @@ pytest tests/ -v
 ## Troubleshooting
 
 **"Unable to access your agents"** in Foundry UI  
-→ You need the `Azure AI Developer` role on the AI Services account. Run Step 3 above.
+→ You need the `Azure AI Developer` role on the AI Services account. Step 2's
+Bicep grants this to everyone in `developerPrincipalIds` (your own OID is passed
+automatically). To grant a principal that wasn't included:
+
+```bash
+MY_OID=$(az ad signed-in-user show --query id -o tsv)
+# Resolve the AI Services *account* id (filter by type — the child project also
+# reports kind=AIServices and would otherwise return a second value)
+AI_ACCOUNT_ID=$(az resource list --resource-group "$RG" \
+  --query "[?type=='Microsoft.CognitiveServices/accounts'].id | [0]" -o tsv)
+
+az role assignment create --role "Azure AI Developer" \
+  --assignee "$MY_OID" --scope "$AI_ACCOUNT_ID"
+```
 
 **"FOUNDRY_PROJECT_ENDPOINT is not set"**  
-→ This project is Foundry-only and will exit with a clear error if the endpoint is missing. Copy the endpoint from the GitHub Actions job summary or run `az deployment group show`, then set `FOUNDRY_PROJECT_ENDPOINT` in `.env`.
+→ This project is Foundry-only and exits with a clear error if the endpoint is
+missing. Re-run **Step 3** to capture the endpoint from your deployment outputs
+into `.env` (nothing is hardcoded — it reads the actual provisioned resource).
 
 **Hosted agents not found (`TRIP_BACKEND=foundry`)**  
 → Register them once with `python scripts/deploy_agents.py`, or use `TRIP_BACKEND=foundry_models` to call the Foundry model directly without hosted agents.
