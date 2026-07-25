@@ -30,14 +30,21 @@ stages:
       - id: researcher
         description: Gathers attractions, weather, events, and cultural tips.
         output: ResearchOutput
+        tools:
+          - web_search        # live web grounding (Foundry-hosted; no Bing resource)
+          # - mcp             # optional: set MCP_SERVER_URL to attach a remote MCP server
 
       - id: planner
         description: Drafts the 3-day day-by-day itinerary.
         output: PlanOutput
+        tools:
+          - code_interpreter  # sequence slots + detect scheduling overlaps
 
       - id: budget
         description: Estimates flights, hotel, food, and activity costs.
         output: BudgetOutput
+        tools:
+          - code_interpreter  # exact cost arithmetic
 
   - id: aggregate
     type: sequential
@@ -63,12 +70,15 @@ stages:
       Revise the proposal to reduce cost and resolve conflicts.
       Documents applied changes and remaining trade-offs.
     output: OptimizedProposal
+    tools:
+      - code_interpreter      # recompute the revised budget total
     then: finalize
 
   - id: finalize
     type: sequential
     description: Render the polished markdown trip brief.
     output: FinalTripBrief
+    tools: []                 # pure synthesis — no tools needed
 
   - id: write-output
     type: sequential

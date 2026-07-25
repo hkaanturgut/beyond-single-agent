@@ -100,7 +100,7 @@ class PlannerAgent:
                 raw = await self._backend.generate(
                     system_prompt=_SYSTEM,
                     user_message=_make_prompt(state),
-                    max_tokens=1200,
+                    max_tokens=4000,
                     agent_name=AGENT_NAME,
                 )
                 state.plan_output = _parse_response(raw)

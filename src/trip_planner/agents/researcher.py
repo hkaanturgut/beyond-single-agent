@@ -60,10 +60,32 @@ def _parse_response(raw: str) -> ResearchOutput:
 
 def _to_list(value: object) -> List[str]:
     if isinstance(value, list):
-        return [str(v) for v in value]
+        return [_item_to_str(v) for v in value]
     if isinstance(value, str):
         return [value]
     return []
+
+
+def _item_to_str(item: object) -> str:
+    """Render a list item as a clean string.
+
+    Web-search-grounded responses sometimes return structured items (e.g. an event as
+    ``{"name": ..., "date_note": ...}``) instead of plain strings.  Flatten those to a
+    readable ``name — detail`` form rather than dumping a Python dict repr.
+    """
+    if isinstance(item, dict):
+        name = str(item.get("name") or item.get("title") or "").strip()
+        detail = str(
+            item.get("date_note")
+            or item.get("date")
+            or item.get("description")
+            or item.get("note")
+            or ""
+        ).strip()
+        if name and detail:
+            return f"{name} — {detail}"
+        return name or detail or ", ".join(f"{k}: {v}" for k, v in item.items())
+    return str(item)
 
 
 class ResearcherAgent:
@@ -81,7 +103,7 @@ class ResearcherAgent:
                     user_message=_make_prompt(
                         state.request.destination, state.request.month
                     ),
-                    max_tokens=800,
+                    max_tokens=4000,
                     agent_name=AGENT_NAME,
                 )
                 state.research_output = _parse_response(raw)

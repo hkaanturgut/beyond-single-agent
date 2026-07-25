@@ -96,7 +96,7 @@ class BudgetAgent:
                 raw = await self._backend.generate(
                     system_prompt=_SYSTEM,
                     user_message=_make_prompt(state),
-                    max_tokens=600,
+                    max_tokens=3500,
                     agent_name=AGENT_NAME,
                 )
                 state.budget_output = _parse_response(raw, state.request.budget_usd)

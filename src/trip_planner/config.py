@@ -45,6 +45,7 @@ class TripPlannerConfig:
     foundry_model_name: str
 
     # ---------- Optional MCP ----------
+    # Enabled when a remote MCP server URL is configured (MCP_SERVER_URL).
     mcp_enabled: bool
 
     # ---------- Output ----------
@@ -81,6 +82,6 @@ class TripPlannerConfig:
             backend=backend,
             foundry_project_endpoint=endpoint,
             foundry_model_name=os.getenv("FOUNDRY_MODEL_NAME", "gpt-5-mini"),
-            mcp_enabled=os.getenv("MCP_ENABLED", "false").lower() == "true",
+            mcp_enabled=bool(os.getenv("MCP_SERVER_URL", "").strip()),
             output_dir=os.getenv("TRIP_OUTPUT_DIR", "output"),
         )

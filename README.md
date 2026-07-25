@@ -11,23 +11,35 @@ A Python multi-agent workflow that plans a personalised 3-day trip using **Azure
 ```mermaid
 flowchart TD
     START([User prompt]) --> FANOUT{{"Fan-out (concurrent)"}}
-    FANOUT --> R[ResearcherAgent]
-    FANOUT --> P[PlannerAgent]
-    FANOUT --> B[BudgetAgent]
+    FANOUT --> R["ResearcherAgent<br/>🔎 web_search"]
+    FANOUT --> P["PlannerAgent<br/>🧮 code_interpreter"]
+    FANOUT --> B["BudgetAgent<br/>🧮 code_interpreter"]
     R --> AGG{{Fan-in Aggregator}}
     P --> AGG
     B --> AGG
     AGG --> ROUTE{{"Conditional Router<br/>over budget / conflicts?"}}
-    ROUTE -- yes --> OPT[OptimizerAgent]
-    ROUTE -- no --> FIN[FinalizerAgent]
+    ROUTE -- yes --> OPT["OptimizerAgent<br/>🧮 code_interpreter"]
+    ROUTE -- no --> FIN["FinalizerAgent<br/>✍️ no tools"]
     OPT --> FIN
-    FIN --> OUT([output/trip-valletta-*.md])
+    FIN --> OUT([output/trip-*.md])
 
     classDef agent fill:#0b6bcb,stroke:#083d73,color:#fff;
     class R,P,B,OPT,FIN agent;
 ```
 
-Each agent is a **hosted PromptAgent** registered in Foundry Agent Service (visible in the Foundry UI under **Agents → My agents**). The Python workflow layer (`WorkflowBuilder`) orchestrates concurrent execution and conditional routing, and each specialist call is routed to its hosted agent by an **explicit `agent_name`**.
+Each agent is a **hosted PromptAgent** registered in Foundry Agent Service (visible in the Foundry UI under **Agents → My agents**), and each one is deployed **with the tools it actually needs** — that's what makes them genuine specialists rather than prompt variants. The Python workflow layer (`WorkflowBuilder`) orchestrates concurrent execution and conditional routing, and each specialist call is routed to its hosted agent by an **explicit `agent_name`**.
+
+### Agent capabilities (tools)
+
+| Agent | Tool | Why it needs a real capability |
+|-------|------|--------------------------------|
+| **researcher-agent** | 🔎 `web_search` (+ optional MCP) | Grounds attractions, seasonal weather, and events in **current** web data instead of stale training data. |
+| **planner-agent** | 🧮 `code_interpreter` | Sequences time slots and **detects scheduling overlaps programmatically**. |
+| **budget-agent** | 🧮 `code_interpreter` | Computes cost totals with **exact arithmetic** (LLMs miscount). |
+| **optimizer-agent** | 🧮 `code_interpreter` | **Recomputes** the revised budget so the new total truly hits the target. |
+| **finalizer-agent** | ✍️ *(none)* | Deliberate contrast — pure synthesis into a markdown brief needs no tool. |
+
+`web_search` and `code_interpreter` are **Foundry-hosted** tools that run inside Foundry's tool loop when the agent is invoked — they need **no** billable "Grounding with Bing Search" resource and no client-side plumbing (they work on pay-as-you-go). An optional **remote MCP server** can be attached to the researcher via `MCP_SERVER_URL` (see [`.env.example`](.env.example)).
 
 📐 **See [`docs/architecture.md`](docs/architecture.md)** for the full orchestration diagrams (fan-out/fan-in, explicit agent routing sequence) and a side-by-side mapping to the real Microsoft Agent Framework API.
 
@@ -141,17 +153,17 @@ python3 scripts/deploy_agents.py
 
 You should see:
 ```
-=== Trip Planner — Foundry Agent Deployment ===
+=== Trip Planner — Foundry Agent Deployment (with tools) ===
 
 Connecting to Foundry project: https://...
-  → Deploying researcher-agent ... v1 ✓
-  → Deploying planner-agent ...    v1 ✓
-  → Deploying budget-agent ...     v1 ✓
-  → Deploying optimizer-agent ...  v1 ✓
-  → Deploying finalizer-agent ...  v1 ✓
+  → Deploying researcher-agent  [tools: web_search] ... v1 ✓
+  → Deploying planner-agent  [tools: code_interpreter] ... v1 ✓
+  → Deploying budget-agent  [tools: code_interpreter] ... v1 ✓
+  → Deploying optimizer-agent  [tools: code_interpreter] ... v1 ✓
+  → Deploying finalizer-agent  [tools: none] ... v1 ✓
 
 All agents deployed successfully.
-View them in the Foundry UI: Agents → My agents
+View them in the Foundry UI: Agents → My agents (each shows its attached tools).
 ```
 
 ### Step 5: Run the trip planner with Foundry agents

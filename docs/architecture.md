@@ -27,9 +27,9 @@ before the Finalizer; otherwise it goes straight to the Finalizer.
 flowchart TD
     START([TripRequest]) --> FANOUT{{"fan-out<br/>(concurrent)"}}
 
-    FANOUT --> R[researcher-agent]
-    FANOUT --> P[planner-agent]
-    FANOUT --> B[budget-agent]
+    FANOUT --> R["researcher-agent<br/>🔎 web_search"]
+    FANOUT --> P["planner-agent<br/>🧮 code_interpreter"]
+    FANOUT --> B["budget-agent<br/>🧮 code_interpreter"]
 
     R --> AGG{{"fan-in<br/>aggregate"}}
     P --> AGG
@@ -38,8 +38,8 @@ flowchart TD
     AGG --> VR[validate_and_route]
     VR --> ROUTE{{"multi_selection_edge_group<br/>selector = validation.route"}}
 
-    ROUTE -- "over budget OR conflicts<br/>(optimize)" --> OPT[optimizer-agent]
-    ROUTE -- "within budget, no conflicts<br/>(finalize)" --> FIN[finalizer-agent]
+    ROUTE -- "over budget OR conflicts<br/>(optimize)" --> OPT["optimizer-agent<br/>🧮 code_interpreter"]
+    ROUTE -- "within budget, no conflicts<br/>(finalize)" --> FIN["finalizer-agent<br/>✍️ no tools"]
     OPT --> FIN
 
     FIN --> OUT([FinalTripBrief to output/*.md])
@@ -89,15 +89,25 @@ sequenceDiagram
     AG-->>WF: updated state
 ```
 
-| Agent class       | `AGENT_NAME`       | Hosted agent (Foundry) |
-|-------------------|--------------------|------------------------|
-| `ResearcherAgent` | `researcher-agent` | researcher-agent       |
-| `PlannerAgent`    | `planner-agent`    | planner-agent          |
-| `BudgetAgent`     | `budget-agent`     | budget-agent           |
-| `OptimizerAgent`  | `optimizer-agent`  | optimizer-agent        |
-| `FinalizerAgent`  | `finalizer-agent`  | finalizer-agent        |
+| Agent class       | `AGENT_NAME`       | Hosted agent (Foundry) | Tool(s)            |
+|-------------------|--------------------|------------------------|--------------------|
+| `ResearcherAgent` | `researcher-agent` | researcher-agent       | `web_search` (+ optional MCP) |
+| `PlannerAgent`    | `planner-agent`    | planner-agent          | `code_interpreter` |
+| `BudgetAgent`     | `budget-agent`     | budget-agent           | `code_interpreter` |
+| `OptimizerAgent`  | `optimizer-agent`  | optimizer-agent        | `code_interpreter` |
+| `FinalizerAgent`  | `finalizer-agent`  | finalizer-agent        | *(none — synthesis)* |
 
-Agents are registered once with `scripts/deploy_agents.py`.
+Agents are registered once with `scripts/deploy_agents.py`, which attaches each
+agent's tools to its `PromptAgentDefinition`. The tools are **Foundry-hosted**:
+Foundry runs the tool loop server-side during the Responses API call, so the
+Python workflow needs no client-side tool plumbing. `web_search` and
+`code_interpreter` require no billable Bing resource (they work on pay-as-you-go);
+a remote MCP server can be attached to the researcher via `MCP_SERVER_URL`.
+
+> **Reasoning effort:** tool-using agents are deployed with `reasoning.effort =
+> "low"`. Under tool use, gpt-5-mini otherwise spends its whole output budget on
+> reasoning tokens and never emits the final message; low effort keeps latency
+> down and leaves room for the answer.
 
 ---
 

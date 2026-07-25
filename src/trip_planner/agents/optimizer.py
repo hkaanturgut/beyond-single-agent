@@ -122,7 +122,7 @@ class OptimizerAgent:
                 raw = await self._backend.generate(
                     system_prompt=_SYSTEM,
                     user_message=_make_prompt(state),
-                    max_tokens=1024,
+                    max_tokens=4000,
                     agent_name=AGENT_NAME,
                 )
                 state.optimized = _parse_optimizer_response(raw, proposal)
