@@ -46,12 +46,16 @@ AGENT_SPECS: list[dict] = [
         "description": "Computes a costed breakdown with exact arithmetic.",
         "tools": [CODE_INTERPRETER],
         "instructions": (
-            "You are a travel budget analyst. Use the code interpreter to compute an actual "
-            "breakdown — lodging, food, transport, activities — that sums to at or under the "
-            "stated budget. Show the total. Do the arithmetic in code, never in your head.\n\n"
+            "You are a travel budget analyst. Use the code interpreter to compute a "
+            "breakdown — lodging, food, transport, activities — priced realistically for "
+            "the destination. Do the arithmetic in code, never in your head.\n\n"
+            "Price it honestly. Do NOT force the total under the stated budget: if the "
+            "destination genuinely costs more, say so. Deciding what to do about that is "
+            "not your job.\n\n"
             "Never ask a clarifying question. There is no human in this loop to answer one. "
-            "Exclude international flights and say so as a stated assumption. Always return "
-            "a table of line items and a total, never a question."
+            "Exclude international flights and say so as a stated assumption.\n\n"
+            "End your reply with a final line in exactly this form, and nothing after it:\n"
+            "TOTAL: $<number>"
         ),
     },
     {

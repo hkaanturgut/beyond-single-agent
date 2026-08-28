@@ -190,8 +190,13 @@ Then the brief: live April weather with a source URL, a budget table that sums, 
 > "The weather came off the live web ten seconds ago. The budget was computed in Python by
 > an agent that wrote the Python itself. And nothing routed anything — I wrote the graph."
 
-**Change the budget to $900 and re-run** to fire the conditional edge. If time is short,
-skip it and say you'd have shown it.
+**Then `--budget $400` on Tokyo** to fire the conditional edge:
+
+```
+  conditional → over budget, asking spine-budget to revise
+```
+
+Both branches are verified. If time is short, skip this and say you'd have shown it.
 
 ---
 
@@ -205,13 +210,21 @@ wanted chat-completions instead of the Agents service, and it wanted a model cal
 compare two numbers. **All three produce working code.** All three destroy the property
 the system exists to have.
 
-**The bug I hit building this, which is worth its own thirty seconds:**
+**Two bugs I hit building this, both worth thirty seconds:**
 
-> Every agent asked me a clarifying question instead of answering. `"Do you want the budget
-> to include flights?"` — addressed to nobody, because there is no human in a workflow.
-> The fix is one line in the instructions: *never ask a clarifying question; state your
-> assumption and continue.* That is not a prompt-engineering trick, it is a consequence of
-> where the agent is running, and you only find it by running it.
+> **One.** Every agent asked me a clarifying question instead of answering. `"Do you want
+> the budget to include flights?"` — addressed to nobody, because there is no human inside
+> a workflow. One line of instructions fixes it. That is not a prompt-engineering trick, it
+> is a consequence of where the agent runs, and you only find it by running it.
+>
+> **Two, and this is the better story.** I told the budget agent to come in at or under the
+> stated budget. It always did. So the conditional edge — the branch that makes this a
+> workflow rather than a pipeline — **never fired once**, and the demo looked perfect,
+> because the happy path is the one you test. The fix was to stop instructing the agent
+> toward the answer: price it honestly, and let *code* decide whether that is over budget.
+>
+> An agent told to produce an acceptable answer will produce one. That is not the same as
+> the answer being true.
 
 **Close:**
 

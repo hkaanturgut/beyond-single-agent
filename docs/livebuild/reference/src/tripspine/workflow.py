@@ -77,15 +77,35 @@ class Foundry:
         return await asyncio.to_thread(self._call, agent_name, message)
 
 
+TOTAL_PATTERN = re.compile(r"TOTAL:\s*\$?\s*([\d,]+)", re.I)
+
+
+def parse_total(breakdown: str) -> int | None:
+    """Read the analyst's declared total.
+
+    The agent is asked to end with `TOTAL: $N` precisely so this is a parse and not a
+    guess. An earlier version took the largest number anywhere in the text, which happily
+    matched a year, a distance, and a phone number.
+    """
+    matches = TOTAL_PATTERN.findall(breakdown)
+    if not matches:
+        return None
+    return int(matches[-1].replace(",", ""))
+
+
 def over_budget(breakdown: str, target: int) -> bool:
     """The condition on the conditional edge.
 
-    Deliberately arithmetic rather than a model call: asking a language model whether a
-    number exceeds another number is the kind of thing that looks clever in a demo and
-    fails in production.
+    Deliberately arithmetic rather than a model call: asking a language model whether one
+    number exceeds another is the kind of thing that demos beautifully and pages you later.
+
+    The branch only exists because the analyst is told to price *honestly* rather than to
+    force the total under target. Instruct it to stay under and this edge is dead code —
+    which is exactly what happened the first time, and it looked fine, because the happy
+    path is the one you test.
     """
-    totals = [int(n.replace(",", "")) for n in re.findall(r"\$?([\d,]{2,})", breakdown)]
-    return bool(totals) and max(totals) > target
+    total = parse_total(breakdown)
+    return total is not None and total > target
 
 
 async def run(request: TripRequest, foundry: Foundry, log=print) -> str:
