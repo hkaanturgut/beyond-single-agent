@@ -63,17 +63,20 @@ class TripRequest(BaseModel):
 
 _MONTH_ALT = "|".join(VALID_MONTHS)
 
-# Destination + month: "trip to <destination> in <month>" — the month must be a
-# real month name, so an optional trailing year (e.g. "October 2026") or extra
-# words after it don't interfere.
-_DEST_MONTH_PATTERN = re.compile(
-    r"trip to\s+(.+?)\s+in\s+(" + _MONTH_ALT + r")\b",
+# Month anywhere in the prompt (optional). A trailing year or extra words after
+# it (e.g. "October 2026") don't interfere.
+_MONTH_PATTERN = re.compile(r"\b(" + _MONTH_ALT + r")\b", re.IGNORECASE)
+
+# Destination: the words after "trip/travel/vacation/... to", stopping at the
+# first structural keyword (from/in/on/for/with/,/budget) or the end of the
+# string. This tolerates a missing month, an origin ("from Toronto"), a duration
+# ("2 weeks"), and "per person" phrasing.
+_DEST_PATTERN = re.compile(
+    r"(?:trip|travel|traveling|travelling|vacation|holiday|getaway|visit|go(?:ing)?)"
+    r"\s+to\s+(?P<dest>.+?)"
+    r"(?=\s+(?:from|in|on|for|with|,|budget)\b|$)",
     re.IGNORECASE,
 )
-
-# Fallbacks used when the combined pattern doesn't match.
-_MONTH_PATTERN = re.compile(r"\b(" + _MONTH_ALT + r")\b", re.IGNORECASE)
-_DEST_ONLY_PATTERN = re.compile(r"trip to\s+(.+?)\s+in\b", re.IGNORECASE)
 
 # Budget: first number following the word "budget" (allowing a currency symbol
 # or code in between, e.g. "budget $2500", "budget of USD 2,500.50"). Falls back
@@ -88,38 +91,39 @@ _DOLLAR_AMOUNT_PATTERN = re.compile(r"\$\s*([\d,]+(?:\.\d+)?)")
 def parse_trip_request(prompt: str) -> TripRequest:
     """Parse a natural-language trip prompt into a :class:`TripRequest`.
 
-    The parser is intentionally lenient. It extracts three fields independently
-    so that extra words, a trailing year, or a currency code don't break it. All
-    of the following work::
+    The parser is intentionally lenient. It extracts each field independently so
+    that extra words, an origin, a duration, a trailing year, or a currency code
+    don't break it. Only a destination and a budget are required; the month is
+    optional and defaults to the current month when omitted. All of the
+    following work::
 
         Plan my 3-day trip to Valletta in April with budget $2200
         Plan my trip to Japan in October 2026 with budget $2500 CAD per person
         I'd love a trip to Lisbon in May, budget of USD 1,800
+        Plan my 2 weeks trip to Japan from Toronto with $3500 per person
 
-    The day count and currency are informational only — this demo always plans a
-    3-day trip and treats the numeric budget as USD.
+    The day count, origin, and currency are informational only — this demo always
+    plans a 3-day trip and treats the numeric budget as USD.
 
     Raises:
-        ValueError: if a destination, month, and budget cannot all be found.
+        ValueError: if a destination or budget cannot be found.
     """
     text = prompt.strip()
 
-    # 1. Destination + month (preferred single match keeps them aligned).
+    # 1. Destination.
     destination: Optional[str] = None
-    month: Optional[str] = None
-    dm = _DEST_MONTH_PATTERN.search(text)
-    if dm:
-        destination = dm.group(1).strip()
-        month = dm.group(2).strip()
-    else:
-        dest_only = _DEST_ONLY_PATTERN.search(text)
-        if dest_only:
-            destination = dest_only.group(1).strip()
-        month_match = _MONTH_PATTERN.search(text)
-        if month_match:
-            month = month_match.group(1).strip()
+    dest_match = _DEST_PATTERN.search(text)
+    if dest_match:
+        destination = dest_match.group("dest").strip(" ,.")
 
-    # 2. Budget.
+    # 2. Month (optional — defaults to the current month when unspecified).
+    month_match = _MONTH_PATTERN.search(text)
+    if month_match:
+        month = month_match.group(1).strip()
+    else:
+        month = _MONTH_CAPS[datetime.utcnow().month - 1]
+
+    # 3. Budget.
     budget_match = _BUDGET_PATTERN.search(text) or _DOLLAR_AMOUNT_PATTERN.search(text)
     budget_value = budget_match.group(1).replace(",", "") if budget_match else None
 
@@ -127,7 +131,6 @@ def parse_trip_request(prompt: str) -> TripRequest:
         name
         for name, value in (
             ("destination", destination),
-            ("month", month),
             ("budget", budget_value),
         )
         if not value
@@ -136,13 +139,12 @@ def parse_trip_request(prompt: str) -> TripRequest:
         raise ValueError(
             "Could not parse "
             + ", ".join(missing)
-            + " from the request. Include a destination, a month, and a budget, "
-            "e.g. 'Plan my 3-day trip to <destination> in <month> "
-            "with budget $<amount>'."
+            + " from the request. Include a destination and a budget (a month is "
+            "optional), e.g. 'Plan my trip to <destination> with budget $<amount>'."
         )
 
     return TripRequest(
         destination=destination.title(),  # type: ignore[union-attr]
-        month=month.capitalize(),  # type: ignore[union-attr]
+        month=month.capitalize(),
         budget_usd=float(budget_value),  # type: ignore[arg-type]
     )
