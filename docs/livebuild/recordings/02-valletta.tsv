@@ -1,0 +1,64 @@
+0.04	
+0.04	3-day trip to Valletta, April, $2200
+0.04	
+0.55	  fan-out → spine-researcher, spine-budget  (concurrent)
+22.59	  fan-in  ← research 1138 chars, budget 1586 chars
+22.59	  conditional → within budget, straight to finalizer
+22.59	  → spine-finalizer
+39.74	
+39.74	--- written to output/trip-valletta.md ---
+39.74	
+39.74	Valletta in April — 3 days — Budget $2,200 USD available; estimated per‑traveler cost based on provided breakdown: TOTAL: $940.00.
+39.74	
+39.74	## Day-by-day outline
+39.74	Day 1 — Arrival & Valletta highlights
+39.74	- Arrive in Valletta, transfer to hotel and check in (airport bus roundtrip ≈ $4.00 or taxi as needed).
+39.74	- Late morning: Upper Barrakka Gardens + Saluting Battery (catch the noon cannon salute if timed right).
+39.74	- Afternoon: St John’s Co‑Cathedral (Baroque interior, Caravaggio).
+39.74	- Evening: Dinner in the historic centre; walk the bastions for evening harbour views.
+39.74	
+39.74	Day 2 — Harbour, palaces, and guided exploring
+39.74	- Morning: Grand Harbour boat/harbour cruise (short traditional-boat tour).
+39.74	- Late morning/early afternoon: Grand Master’s Palace visit and nearby museums.
+39.74	- Afternoon: Guided walking tour of Valletta’s streets, churches, and cafés.
+39.74	- Evening: Sample Maltese cuisine; if travelling in Easter week, attend/procession or local Holy Week activities.
+39.74	
+39.74	Day 3 — Short day trip and departure
+39.74	- Morning: Mdina/Rabat visit (entries + bus) — explore the Silent City and museums.
+39.74	- Early afternoon: Return to Valletta for last museum or shopping stop (small museum entries / misc).
+39.74	- Late afternoon: Return to lodging and depart for airport.
+39.74	
+39.74	Notes
+39.74	- Weather: mild spring daytimes ~16–18°C (60–64°F), cool nights, few rainy days in April — pack a light jacket and an umbrella.
+39.74	- Seasonal: Holy Week / Easter processions often occur in April; dates shift by year and may affect opening hours or add unique local events.
+39.74	
+39.74	Gap: Year and number of travelers were not specified; pricing is per traveler unless otherwise noted.
+39.74	
+39.74	## Budget table (figures as provided)
+39.74	| Category | Amount |
+39.74	|---|---:|
+39.74	| Lodging: $160.00 per night × 3 nights = $480.00 | $480.00 |
+39.74	| Food: $78.00 per day × 3 days = $234.00 | $234.00 |
+39.74	| Transport (local): $44.00 | $44.00 |
+39.74	| Activities & entries: $132.00 | $132.00 |
+39.74	| Misc / taxes / small purchases: $50.00 | $50.00 |
+39.74	| TOTAL: $940.00 | $940.00 |
+39.74	
+39.74	Breakdown (verbatim)
+39.74	- Lodging: $160.00 per night × 3 nights = $480.00
+39.74	  - Mid-range hotel in Valletta (central, well-reviewed, breakfast sometimes not included)
+39.74	- Food: $78.00 per day × 3 days = $234.00
+39.74	  - Estimated daily: breakfast $10, lunch $18, dinner $40, snacks/coffee $10
+39.74	- Transport (local): $44.00
+39.74	  - Airport bus roundtrip ≈ $4.00; local buses / occasional taxi ≈ $40.00
+39.74	- Activities & entries: $132.00
+39.74	  - St John’s Co-Cathedral entry $15
+39.74	  - Grand Master’s Palace $12
+39.74	  - Harbour cruise (1.5 hr) $30
+39.74	  - Guided walking tour $30
+39.74	  - Mdina/Rabat visit (entries + bus) $25
+39.74	  - Small museum entries / misc $20
+39.74	- Misc / taxes / small purchases: $50.00
+39.74	  - Tourist/room fees, tips, sundries, small seat-of-pants buffer
+39.74	
+39.74	Assumptions: international flights are excluded.

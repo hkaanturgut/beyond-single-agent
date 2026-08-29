@@ -1,0 +1,43 @@
+0.08	
+0.08	3-day trip to Tokyo, April, $120
+0.08	
+0.88	  fan-out → spine-researcher, spine-budget  (concurrent)
+22.88	  fan-in  ← research 974 chars, budget 690 chars
+22.88	  conditional → over budget, asking spine-budget to revise
+46.35	  → spine-finalizer
+58.63	
+58.63	--- written to output/trip-tokyo.md ---
+58.63	
+58.63	# Tokyo — 3 days on $120.00 (total)
+58.63	One-line summary: 3-day Tokyo trip for a single traveler on a tight $120.00 total — basic dorm/capsule nights, convenience-store meals, Suica for cheap metro trips, and a focus on free/low-cost highlights (Asakusa, Meiji Jingu, Shibuya, Ueno/Chidorigafuchi for hanami).
+58.63	
+58.63	Day-by-day outline
+58.63	- Day 1 — Arrival, settle, Asakusa & Senso‑ji
+58.63	  - Arrive, buy/load Suica (Suica deposit $5.00 included in budget), check in to budget dorm/capsule (book outside central wards to hit $20.00/night).
+58.63	  - Walk Asakusa, visit Senso‑ji (free), explore Nakamise shopping street (snacks from convenience stores or 100‑yen shop).
+58.63	  - Evening: low-key stroll along Sumida River; cheap dinner from convenience store (~$10/day budget).
+58.63	
+58.63	- Day 2 — Meiji Jingu, Harajuku & Shibuya
+58.63	  - Morning: Meiji Jingu shrine and Yoyogi Park (free) — good for a peaceful walk under early-spring greenery.
+58.63	  - Afternoon: Explore Harajuku streets, budget shopping/snacks (100‑yen shops), then head to Shibuya for the scramble crossing and people‑watching.
+58.63	  - Evening: Night views in Shibuya; convenience-store dinner/snacks.
+58.63	
+58.63	- Day 3 — Ueno Park / Chidorigafuchi hanami spots & departure
+58.63	  - Morning: Ueno Park for cherry‑blossom viewing (seasonal) and free museum gardens (museum admission not budgeted except the $3.00 activities allowance).
+58.63	  - Optional stroll at Chidorigafuchi for sakura if time allows (free).
+58.63	  - Return to dorm, check out, cheapest airport transfer roundtrip component was budgeted ($10.00 overall — use cheapest option booked in advance), depart.
+58.63	
+58.63	Practical notes and packing
+58.63	- Weather (April): mild spring — pack a light jacket and umbrella.
+58.63	- Meals: plan on convenience-store meals and 100‑yen shop snacks to stay within $10.00/day food allocation.
+58.63	- Mobility: budget assumes metro $4.00/day × 3 and Suica $5.00 deposit; plan walking-heavy days to save fares.
+58.63	- Caveats: This plan is very tight and realistic only if you accept basic dorm beds, minimal paid attractions, and convenience-store meals. There's little or no buffer for luggage storage, unexpected fares, or pricier hostels/attractions. Assumptions: international flights excluded.
+58.63	
+58.63	Budget
+58.63	| Category | Details | Cost |
+58.63	|---|---:|---:|
+58.63	| Lodging | 3 nights × $20.00/night (cheap dorm/capsule, likely outside central wards) | $60.00 |
+58.63	| Food | 3 days × $10.00/day (convenience store meals, 100‑yen shop snacks) | $30.00 |
+58.63	| Transport | Suica deposit $5.00 + metro $4.00/day × 3 = $12.00 + cheapest airport transfer roundtrip $10.00 | $27.00 |
+58.63	| Activities | mostly free sights, small paid entry/donation | $3.00 |
+58.63	| TOTAL |  | $120.00
