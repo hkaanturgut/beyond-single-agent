@@ -12,7 +12,11 @@ fits the slot:
               ↑ concurrent          ↑ conditional edge if over budget
 ```
 
-**284 lines. Three hosted agents. Deploys in 12 seconds, runs in 38.**
+**284 lines. Three hosted agents. Deploys in 10 seconds, runs in 42.**
+
+Measured on a cold start — the three agents deleted from Foundry first, then rebuilt
+exactly as you will on stage. The over-budget path takes **68 seconds**, because the
+revision is a fourth call. Budget the extra 26 seconds before you promise that beat.
 
 Reference implementation: [`reference/`](reference/). It is verified working against
 `trip-planner-prod` — the three agents are deployed right now. You are re-deriving it in
@@ -52,9 +56,12 @@ az login                                     # most likely failure, by a distanc
 az account show                              # right subscription
 cd ~/repos/hkaanturgut/beyond-single-agent/docs/livebuild/reference
 source ../../../.venv/bin/activate
-python3 deploy_agents.py                     # 12s — proves Foundry is reachable
-PYTHONPATH=src python3 -m tripspine          # 38s — proves the whole chain
+python3 deploy_agents.py                     # 10s — proves Foundry is reachable
+PYTHONPATH=src python3 -m tripspine          # 42s — proves the whole chain
 ```
+
+**Delete the three `spine-*` agents before you start.** The portal going from five agents
+to eight *while the room watches* is the beat; them already being there is not.
 
 Then open, and leave open:
 - the Foundry portal on **Agents → My agents**
@@ -136,7 +143,7 @@ Then handoff to plan, and cut:
   matters: *"agents are versioned resources. I can change one in the portal without
   touching this code."*
 
-Then run it — **12 seconds** — and **refresh the Foundry portal.**
+Then run it — **10 seconds** — and **refresh the Foundry portal.**
 
 > "Those are not in my code any more. They're in Foundry. Different tools each. I can open
 > one, change its instructions, and my pipeline picks it up without a redeploy."
@@ -235,6 +242,15 @@ the system exists to have.
 Then: *"this is the spine. The full version has five agents, an optimizer on the
 conditional branch, and Bicep for the infrastructure"* →
 `github.com/hkaanturgut/beyond-single-agent`
+
+---
+
+## The deck
+
+Eight slides, scaffolding only: <https://claude.ai/code/artifact/24071adf-f799-4d5d-b787-e5e30f774cad>
+
+`←→` navigate · `O` overview · `N` speaker notes · `F` fullscreen. Slide 4 is the build
+board — tab back to it whenever the room needs re-orienting mid-build.
 
 ---
 
