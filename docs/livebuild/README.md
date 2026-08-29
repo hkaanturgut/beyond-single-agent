@@ -197,13 +197,19 @@ Then the brief: live April weather with a source URL, a budget table that sums, 
 > "The weather came off the live web ten seconds ago. The budget was computed in Python by
 > an agent that wrote the Python itself. And nothing routed anything — I wrote the graph."
 
-**Then `--budget $400` on Tokyo** to fire the conditional edge:
+**Then Tokyo at `$120`** to fire the conditional edge:
 
 ```
   conditional → over budget, asking spine-budget to revise
 ```
 
-Both branches are verified. If time is short, skip this and say you'd have shown it.
+Both branches are verified.
+
+**Use $120, not $400.** At $400 the agent sometimes prices Tokyo *under* target and the
+branch does not fire — it is a judgement call, so it is not deterministic. $120 is below
+any honest three-day total, so it fires every time. Verified over three consecutive runs.
+
+If time is short, skip this and say you'd have shown it.
 
 ---
 
