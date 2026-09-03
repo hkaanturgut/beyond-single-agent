@@ -6,6 +6,19 @@ A Python multi-agent workflow that plans a personalised 3-day trip using **Azure
 
 ---
 
+## Conference demo package
+
+Use these assets for the live "A day of an Engineer with GitHub Copilot" demo:
+
+- [Runbook](docs/demo-runbook.md) - minute-by-minute live flow with copy/paste prompts
+- [Speaker script](docs/demo-script.md) - short transitions and recovery lines
+- [Fallbacks](docs/demo-fallbacks.md) - offline and no-auth backups per segment
+- [Daily workflow playbook](docs/daily-workflow-playbook.md) - the routine version of the demo
+
+The pipeline story is backed by the existing repo assets in `.github/workflows/ci.yml` and `.github/workflows/deploy-foundry.yml`.
+
+---
+
 ## How it works
 
 ```mermaid
